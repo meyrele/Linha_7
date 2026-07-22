@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Iniciativas — Linha 7 | SoU_Ciência</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ocre:#b86e1f;
+  --ocre-claro:#d9881f;
+  --ocre-palido:#fde8c4;
+  --ocre-bg:#fff5e6;
+  --terracota:#a63318;
+  --verde:#2a6640;
+  --areia:#ede8df;
+  --areia-escura:#d4cabb;
+  --areia-medio:#e4ddd0;
+  --carvao:#111111;
+  --carvao-medio:#222222;
+  --cinza:#444444;
+  --cinza-claro:#767676;
+  --branco:#ffffff;
+  --sombra:rgba(184,110,31,.18);
+  --sombra-forte:rgba(17,17,17,.16);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;font-family:'Source Sans 3',sans-serif;background:var(--areia);color:var(--carvao);}
+body{display:flex;flex-direction:column;}
+
+/* ── HEADER ── */
+:root{
+  --sou-verde:#00a086;
+  --sou-magenta:#c4245a;
+  --sou-azul:#1e7ec8;
+  --sou-laranja:#e85d1a;
+}
+header{position:relative;background:var(--branco);border-bottom:2px solid var(--areia-escura);display:flex;align-items:center;justify-content:space-between;padding:10px 28px 0;height:86px;box-sizing:border-box;flex-shrink:0;box-shadow:0 2px 12px var(--sombra);}
+/* Faixa-gradiente da marca SoU no topo do cabeçalho */
+header::before{content:"";position:absolute;top:0;left:0;right:0;height:10px;background:linear-gradient(90deg,var(--sou-verde) 0%,var(--sou-verde) 25%,var(--sou-azul) 25%,var(--sou-azul) 50%,var(--sou-magenta) 50%,var(--sou-magenta) 75%,var(--sou-laranja) 75%,var(--sou-laranja) 100%);}
+.header-left{display:flex;align-items:center;gap:22px;}
+.header-logo{height:54px;width:auto;display:block;}
+.sep{width:1px;height:40px;background:var(--areia-escura);}
+.header-title{font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:400;color:var(--cinza);letter-spacing:.01em;max-width:560px;line-height:1.45;}
+.header-title-main{font-family:'Source Sans 3',sans-serif;font-size:24px;font-weight:700;color:var(--sou-verde);letter-spacing:.01em;display:block;line-height:1.3;}
+.header-title-sub{font-family:'Source Sans 3',sans-serif;font-size:19px;font-weight:400;color:var(--cinza);letter-spacing:.01em;display:block;line-height:1.35;}
+.header-right{display:flex;align-items:center;gap:18px;}
+.update-tag{font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:700;color:var(--cinza);letter-spacing:.06em;text-transform:uppercase;}
+.btn-download{background:var(--ocre);color:#fff;border:none;padding:9px 20px;font-family:'Source Sans 3',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:20px;transition:background .2s;}
+.btn-download:hover{background:var(--terracota);}
+
+/* ── LAYOUT ── */
+.main{display:flex;flex:1;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:320px;flex-shrink:0;background:var(--branco);display:flex;flex-direction:column;border-right:1px solid var(--areia-escura);overflow:hidden;}
+
+/* KPI strip */
+.kpi-strip{background:var(--areia);display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;flex-shrink:0;border-bottom:2px solid var(--areia-escura);}
+.kpi-cell{background:var(--branco);padding:9px 14px;}
+.kpi-cell:first-child{background:var(--ocre-bg);}
+.kpi-number{font-family:'Source Sans 3',sans-serif;font-size:21px;font-weight:800;color:var(--ocre);line-height:1;}
+.kpi-cell:first-child .kpi-number{color:var(--terracota);}
+.kpi-label{font-family:'Source Sans 3',sans-serif;font-size:10px;font-weight:700;color:var(--cinza);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;}
+
+/* Filters */
+.filters-area{padding:10px 16px 12px;border-bottom:1px solid var(--areia-escura);flex-shrink:0;}
+.filters-area>.filter-group{margin-top:9px;margin-bottom:0;}
+.filters-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+.filters-title{font-family:'Source Sans 3',sans-serif;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ocre);}
+.clear-btn{font-family:'Source Sans 3',sans-serif;font-size:12px;color:var(--ocre);cursor:pointer;background:none;border:1px solid var(--ocre-palido);padding:3px 10px;border-radius:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
+.clear-btn:hover{background:var(--ocre-palido);}
+.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 10px;}
+.filter-group{margin-bottom:7px;}
+.filter-grid .filter-group{margin-bottom:0;}
+.filter-label{font-family:'Source Sans 3',sans-serif;font-size:12px;font-weight:700;color:var(--cinza);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;display:block;}
+select{text-overflow:ellipsis;width:100%;padding:7px 26px 7px 10px;background:var(--areia);border:1.5px solid var(--areia-escura);border-radius:14px;font-family:'Source Sans 3',sans-serif;font-size:14px;color:var(--carvao);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b86e1f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;transition:border-color .2s;}
+select:focus{outline:none;border-color:var(--ocre);}
+
+/* Campo de busca */
+.search-group{margin-bottom:10px;position:relative;}
+.search-input{width:100%;padding:10px 14px 10px 38px;background:var(--branco);border:1.5px solid var(--areia-escura);border-radius:20px;font-family:'Source Sans 3',sans-serif;font-size:15px;color:var(--carvao);transition:border-color .2s,box-shadow .2s;box-sizing:border-box;}
+.search-input::placeholder{color:var(--cinza-claro);}
+.search-input:focus{outline:none;border-color:var(--ocre);box-shadow:0 0 0 3px var(--ocre-bg);}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ocre);pointer-events:none;font-size:15px;}
+.search-clear{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--cinza-claro);cursor:pointer;font-size:17px;line-height:1;padding:2px;display:none;}
+.search-clear.show{display:block;}
+.search-clear:hover{color:var(--terracota);}
+
+/* Autocompletar */
+.suggest-box{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--areia-escura);border-radius:14px;box-shadow:0 10px 32px var(--sombra-forte);z-index:1200;max-height:300px;overflow-y:auto;display:none;}
+.suggest-box.show{display:block;}
+.suggest-box::-webkit-scrollbar{width:6px;}
+.suggest-box::-webkit-scrollbar-thumb{background:var(--areia-escura);border-radius:3px;}
+.suggest-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 13px;cursor:pointer;border-bottom:1px solid rgba(193,127,59,.08);}
+.suggest-item:last-child{border-bottom:none;}
+.suggest-item:hover,.suggest-item.active{background:var(--ocre-bg);}
+.suggest-text{font-size:14px;color:var(--carvao);line-height:1.35;}
+.suggest-text mark{background:var(--ocre-palido);color:var(--terracota);padding:0 1px;border-radius:3px;font-style:normal;}
+.suggest-type{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ocre);flex-shrink:0;background:var(--ocre-bg);padding:2px 7px;border-radius:8px;}
+.suggest-empty{padding:11px 13px;font-size:13px;color:var(--cinza-claro);font-style:italic;}
+
+/* Linha de vínculo UAES no card */
+.popup-uaes-line{font-size:12px;font-style:italic;color:var(--cinza-claro);line-height:1.4;margin-bottom:10px;padding-bottom:9px;border-bottom:1px dashed var(--areia-escura);}
+.popup-uaes-sigla{display:block;}
+
+/* Botão flutuante de atualização no mapa */
+.btn-atualizar{position:absolute;top:16px;left:16px;z-index:500;background:var(--ocre);color:#fff;border:none;padding:10px 16px;font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border-radius:22px;box-shadow:0 4px 16px var(--sombra);display:flex;align-items:center;gap:7px;transition:background .2s,transform .2s;}
+.btn-atualizar:hover{background:var(--terracota);transform:translateY(-1px);}
+.btn-atualizar svg{flex-shrink:0;}
+
+/* Results */
+.results-header{padding:11px 20px 8px;flex-shrink:0;border-bottom:1px solid var(--areia-escura);display:flex;align-items:center;justify-content:space-between;}
+.results-count{font-family:'Source Sans 3',sans-serif;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--cinza);}
+.results-count span{color:var(--ocre);font-size:22px;font-weight:800;margin-right:4px;}
+.list-container{flex:1;overflow-y:auto;padding:6px 0;}
+.list-container::-webkit-scrollbar{width:3px;}
+.list-container::-webkit-scrollbar-thumb{background:var(--areia-escura);border-radius:2px;}
+.list-item{padding:10px 20px;cursor:pointer;border-bottom:1px solid rgba(193,127,59,.08);transition:background .15s;position:relative;}
+.list-item:hover{background:var(--ocre-bg);}
+.list-item.active{background:var(--ocre-bg);border-left:3px solid var(--ocre);padding-left:17px;}
+.item-nome{font-family:'Source Sans 3',sans-serif;font-size:15px;font-weight:600;color:var(--carvao);line-height:1.4;margin-bottom:3px;}
+.item-inst{font-size:14px;color:var(--cinza);line-height:1.35;}
+.item-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
+.tag{font-family:'Source Sans 3',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:10px;}
+.tag-regiao{background:var(--areia);color:var(--cinza);border:1px solid var(--areia-escura);}
+.tag-rede{background:var(--ocre-palido);color:var(--terracota);}
+
+/* ── MAP ── */
+.map-container{flex:1;position:relative;background:var(--areia);}
+#map{width:100%;height:100%;}
+.leaflet-container{font-family:'Source Sans 3',sans-serif !important;background:#ddd8ce !important;}
+
+/* Leaflet overrides */
+.leaflet-popup-content-wrapper{border-radius:4px;box-shadow:0 8px 40px var(--sombra-forte);padding:0;overflow:hidden;border:none;}
+.leaflet-popup-content{margin:0;width:340px !important;}
+.leaflet-popup-tip-container{display:none;}
+.leaflet-popup-close-button{color:rgba(255,255,255,.85) !important;font-size:18px !important;top:9px !important;right:12px !important;font-weight:400 !important;}
+.leaflet-popup-close-button:hover{color:#fff !important;}
+
+/* Popup card */
+.popup-card{font-family:'Source Sans 3',sans-serif;}
+.popup-header{padding:14px 36px 12px 16px;}
+.popup-tipo-badge{font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-bottom:6px;display:block;}
+.popup-nome{font-family:'Source Sans 3',sans-serif;font-size:18px;font-weight:700;color:#fff;line-height:1.35;margin-bottom:4px;}
+.popup-inst{font-size:15px;color:rgba(255,255,255,.85);line-height:1.4;}
+.popup-body{padding:13px 16px;background:var(--branco);}
+.popup-row{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;}
+.popup-icon{width:16px;flex-shrink:0;font-size:12px;margin-top:1px;color:var(--ocre);}
+.popup-col{flex:1;}
+.popup-lbl{font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:700;color:var(--cinza);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:3px;}
+.popup-val{font-size:15px;color:var(--carvao);line-height:1.4;}
+.popup-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+.popup-chip{font-family:'Source Sans 3',sans-serif;font-size:13px;padding:4px 11px;border-radius:12px;background:var(--ocre-palido);color:var(--terracota);font-weight:700;letter-spacing:.02em;line-height:1.4;}
+.popup-footer{padding:10px 16px;background:var(--areia);border-top:1px solid var(--areia-escura);display:flex;gap:10px;align-items:center;}
+.popup-link{font-family:'Source Sans 3',sans-serif;font-size:13px;color:var(--ocre);text-decoration:none;font-weight:700;letter-spacing:.03em;}
+.popup-link:hover{color:var(--terracota);}
+
+/* Custom marker circles — style like timeline nodes */
+.marker-circle{
+  border-radius:50%;
+  border:2.5px solid #fff;
+  box-shadow:0 2px 8px rgba(193,127,59,.4);
+  transition:all .2s;
+  cursor:pointer;
+}
+.marker-circle:hover{transform:scale(1.3);box-shadow:0 4px 16px rgba(193,127,59,.6);}
+.marker-active{transform:scale(1.4) !important;box-shadow:0 4px 20px rgba(184,92,58,.7) !important;border-width:3px !important;}
+
+/* Legend */
+.legenda{position:absolute;bottom:28px;right:16px;background:rgba(253,246,236,.97);border:1px solid var(--areia-escura);border-radius:4px;padding:14px 16px;z-index:500;min-width:164px;box-shadow:0 4px 20px var(--sombra);}
+.legenda-title{font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ocre);margin-bottom:11px;}
+.legenda-item{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.legenda-item:last-child{margin-bottom:0;}
+.legenda-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,.9);box-shadow:0 1px 5px rgba(0,0,0,.2);}
+.legenda-text{font-family:'Source Sans 3',sans-serif;font-size:15px;color:var(--carvao);font-weight:500;}
+
+/* Region stats */
+.region-bar{position:absolute;top:16px;right:16px;background:rgba(253,246,236,.97);border:1px solid var(--areia-escura);border-radius:4px;padding:13px 15px;z-index:500;box-shadow:0 4px 20px var(--sombra);min-width:148px;}
+.region-bar-title{font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ocre);margin-bottom:10px;}
+.region-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:10px;}
+.region-name{font-family:'Source Sans 3',sans-serif;font-size:14px;color:var(--carvao);font-weight:500;min-width:62px;}
+.region-track{flex:1;height:4px;background:var(--areia-escura);border-radius:2px;overflow:hidden;}
+.region-fill{height:100%;background:var(--ocre);border-radius:2px;transition:width .5s ease;}
+.region-num{font-family:'Source Sans 3',sans-serif;font-size:14px;font-weight:800;color:var(--ocre);min-width:20px;text-align:right;}
+
+/* Download filtrado */
+.btn-download-filtered{width:calc(100% - 32px);margin:9px 16px 12px;background:transparent;color:#5a8f87;border:1.5px solid #5a8f87;padding:7px 12px;font-family:'Source Sans 3',sans-serif;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;border-radius:18px;transition:background .2s,color .2s;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
+.btn-download-filtered:hover{background:#7CA9A0;color:#fff;}
+.btn-download-filtered.disabled{opacity:.35;pointer-events:none;}
+.toast{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:var(--terracota);color:#fff;padding:9px 20px;border-radius:20px;font-family:'Source Sans 3',sans-serif;font-size:14px;font-weight:600;letter-spacing:.05em;z-index:600;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+/* ── MOBILE ── */
+@media (max-width:860px){
+  html,body{overflow:auto;height:auto;}
+  body{display:block;}
+  header{height:auto;min-height:0;flex-wrap:wrap;gap:8px 12px;padding:14px 14px 10px;}
+  .header-logo{height:38px;}
+  .sep{display:none;}
+  .header-title-main{font-size:16px;}
+  .header-title-sub{font-size:12.5px;}
+  .header-right{width:100%;justify-content:space-between;gap:10px;}
+  .update-tag{font-size:11px;}
+  .btn-download{font-size:12px;padding:8px 14px;}
+  .main{flex-direction:column;overflow:visible;}
+  .map-container{order:-1;flex:none;height:50vh;min-height:300px;}
+  .sidebar{width:100%;border-right:none;border-top:2px solid var(--areia-escura);overflow:visible;}
+  .list-container{max-height:320px;}
+  .region-bar{display:none;}
+  .legenda{bottom:10px;right:8px;padding:9px 11px;min-width:0;}
+  .legenda-title{font-size:10px;}
+  .legenda-text{font-size:11px;}
+  .btn-atualizar{font-size:11px;padding:8px 12px;top:10px;left:8px;}
+  .suggest-box{max-height:180px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <svg id="logo-sou" class="header-logo" role="img" aria-label="SoU_Ciência" xmlns="http://www.w3.org/2000/svg" viewBox="81 70 521.5 126.5"><defs><style>#logo-sou .cls-1{fill:#009b87;}#logo-sou .cls-2{fill:#c72254;}#logo-sou .cls-3{fill:#0088cf;}#logo-sou .cls-4{fill:#ef4e23;}</style></defs><path class="cls-1" d="M143.8,132.86c0-33.14-26.86-60-60-60v60c0,33.14,26.86,60,60,60,10.93,0,21.17-2.92,30-8.03-17.93-10.37-30-29.76-30-51.97Z"/><path class="cls-4" d="M203.79,132.86c0,22.21-12.07,41.59-30,51.97,8.82,5.11,19.07,8.03,30,8.03h60c0-33.14-26.86-60-60-60Z"/><path class="cls-3" d="M263.79,72.86h-60v60c33.14,0,60-26.86,60-60Z"/><path class="cls-2" d="M203.79,132.86v-60c-33.14,0-60,26.86-60,60,0,22.21,12.07,41.59,30,51.97,17.93-10.37,30-29.76,30-51.97Z"/><path d="M303.46,118.16l.96-1.47c.64-.83,2.21-1,3.28-.14,2.57,2.33,6.99,4.31,10.31,4.38,6.96.07,12.13-3.84,12.13-10.34,0-4.59-3.57-7.9-11.77-11.27-9.13-3.55-13.13-7.72-13.13-13.42,0-7.57,5.99-12.92,14.45-12.92,4.17,0,9.13,1.9,12.13,5.17l-.71,1.22c-.75,1.18-2,1.62-3.28.9-2.78-2.19-5.92-2.98-8.13-2.98-5.92,0-10.17,3.45-10.17,8.58,0,3.84,3.07,6.6,10.06,9.33,10.24,3.8,14.84,8.65,14.84,15.4,0,8.54-6.81,14.64-16.41,14.64-5.6,0-11.27-3.09-14.56-7.07Z"/><path d="M367.96,72.97c14.45,0,26.04,11.59,26.04,26.13s-11.59,26.13-26.04,26.13-26.04-11.59-26.04-26.13,11.52-26.13,26.04-26.13ZM367.96,120.92c12.09,0,21.76-9.69,21.76-21.82s-9.67-21.82-21.76-21.82-21.76,9.69-21.76,21.82,9.67,21.82,21.76,21.82Z"/><path d="M423.61,115.61c6.85,0,11.42-4.56,11.42-11.23v-31.26h9.63v31.26c0,12.42-8.49,20.92-21.05,20.92s-21.01-8.5-21.01-20.92v-31.26h9.63v31.26c0,6.68,4.53,11.23,11.38,11.23Z"/><path d="M303.57,167.32c0-15.04,11.42-26.45,26.44-26.45,7.21,0,14.66,3.55,18.87,8.61l-2.32,2.66c-1.89,2.05-4.96,2.58-7.24,1.22-2.68-1.9-5.96-3.09-9.38-3.09-9.53,0-16.73,7.32-16.73,17.05s7.21,17.01,16.73,17.01c3.42,0,6.74-1.11,9.45-3.12,2.43-1.58,5.46-.97,7.31,1.08l2.35,2.62c-4.25,5.21-11.67,8.83-19.05,8.83-15.02,0-26.44-11.38-26.44-26.41Z"/><path d="M357.86,193.05v-51.46h9.63v51.46h-9.63Z"/><path d="M390.04,150.92v11.38h18.98v9.01h-18.98v12.38h23.37v9.37h-33v-51.5h33v9.37h-23.37ZM389.97,137.53h-5.32l6.39-6.42c1.03-1.04,1.96-1.61,4-1.61h3.85c2.03,0,2.96.57,4,1.61l6.35,6.42h-5.28c-1.93,0-3.25-.4-3.89-1.08l-2.53-2.69c-.32-.32-.57-.79-.57-1.33,0,.54-.25,1.04-.57,1.33l-2.53,2.69c-.64.72-2,1.08-3.89,1.08Z"/><path d="M466.89,141.55v51.5h-7.21c-1.14,0-2.28-.64-3.32-2.15l-24.44-36.14h-.18c.89,2.22,1.18,4.2,1.18,6.28l-.04,32.01h-9.6v-51.5h7.63c2.32,0,3.6.79,5.1,2.98l22.51,33.34h.14c-1.14-2.66-1.39-4.88-1.39-6.64l.04-29.68h9.56Z"/><path d="M476.37,167.32c0-15.04,11.42-26.45,26.44-26.45,7.21,0,14.66,3.55,18.87,8.61l-2.32,2.66c-1.89,2.05-4.96,2.58-7.24,1.22-2.68-1.9-5.96-3.09-9.38-3.09-9.53,0-16.73,7.32-16.73,17.05s7.21,17.01,16.73,17.01c3.42,0,6.74-1.11,9.45-3.12,2.43-1.58,5.46-.97,7.31,1.08l2.35,2.62c-4.25,5.21-11.67,8.83-19.05,8.83-15.02,0-26.44-11.38-26.44-26.41Z"/><path d="M530.67,193.05v-51.46h9.63v51.46h-9.63Z"/><path d="M599.67,193.05h-6.89c-2.28,0-4.21-1.29-5.14-3.48l-3.03-7.07h-23.12l-3.03,7.07c-.96,2.19-2.89,3.48-5.17,3.48h-6.89l22.37-51.5h8.53l22.37,51.5ZM581.08,174.39l-6.42-14.93c-1.07-2.48-1.43-4.09-1.43-6.35h-.36c-.04,2.26-.39,3.88-1.46,6.35l-6.42,14.93h16.09Z"/></svg>
+    <div class="sep"></div>
+    <span class="header-title"><span class="header-title-main">Universidades e Movimentos Sociais</span><span class="header-title-sub">Por uma Economia Solidária Feminista Ecológica</span></span>
+  </div>
+  <div class="header-right">
+    <span class="update-tag" id="update-date">Atualizado: —</span>
+    <button class="btn-download" onclick="downloadAllCSV()">⬇ Baixar dados</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="kpi-strip">
+      <div class="kpi-cell">
+        <div class="kpi-number" id="kpi-iniciativas">134</div>
+        <div class="kpi-label">Iniciativas</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-number" id="kpi-inst">—</div>
+        <div class="kpi-label">Instituições</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-number" id="kpi-estados">—</div>
+        <div class="kpi-label">Estados</div>
+      </div>
+    </div>
+
+    <div class="filters-area">
+      <div class="filters-header">
+        <span class="filters-title">Filtros</span>
+        <button class="clear-btn" onclick="clearFilters()">Limpar</button>
+      </div>
+      <div class="search-group">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="f-busca" class="search-input" placeholder="Buscar iniciativa, instituição, cidade, tema…" oninput="onSearchInput()" onkeydown="onSearchKey(event)" onfocus="onSearchInput()" autocomplete="off">
+        <button type="button" class="search-clear" id="search-clear" onclick="clearBusca()" aria-label="Limpar busca">×</button>
+        <div class="suggest-box" id="suggest-box" role="listbox"></div>
+      </div>
+      <div class="filter-grid">
+      <div class="filter-group">
+        <label class="filter-label" for="f-regiao">Região</label>
+        <select id="f-regiao" onchange="applyFilters()">
+          <option value="">Todas as regiões</option>
+          <option value="N">Norte</option>
+          <option value="NE">Nordeste</option>
+          <option value="CO">Centro-Oeste</option>
+          <option value="SE">Sudeste</option>
+          <option value="S">Sul</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="f-estado">Estado</label>
+        <select id="f-estado" onchange="applyFilters()">
+          <option value="">Todos os estados</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="f-tipo">Tipo</label>
+        <select id="f-tipo" onchange="applyFilters()">
+          <option value="">Todos os tipos</option>
+          <option value="Pública Federal">Pública Federal</option>
+          <option value="Pública Estadual">Pública Estadual</option>
+          <option value="Pública Municipal">Pública Municipal</option>
+          <option value="Privada Comunitária">Privada Comunitária</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="f-rede">Rede</label>
+        <select id="f-rede" onchange="applyFilters()">
+          <option value="">Todas as redes</option>
+          <option value="Rede de ITCPs">Rede de ITCPs</option>
+          <option value="IFEcoSol">IFEcoSol</option>
+          <option value="Unitrabalho">Unitrabalho</option>
+          <option value="PROCOAS">PROCOAS</option>
+          <option value="REPOS">REPOS</option>
+          <option value="ABEPETS">ABEPETS</option>
+          <option value="nenhuma">Nenhuma rede</option>
+        </select>
+      </div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="f-tema">Tema de atuação</label>
+        <select id="f-tema" onchange="applyFilters()">
+<option value="">Todos os temas</option>
+          <option value="Antirracismo / Questão racial" title="Antirracismo / Questão racial">Antirracismo / Questão racial</option>
+          <option value="Artesãs e artesãos" title="Artesãs e artesãos">Artesãs e artesãos</option>
+          <option value="Catadoras e catadores de materiais recicláveis" title="Catadoras e catadores de materiais recicláveis">Catadoras e catadores de materiais recicláveis</option>
+          <option value="Cozinha solidária e processamento de alimentos" title="Cozinha solidária e processamento de alimentos">Cozinha solidária e processamento de alimentos</option>
+          <option value="Egressos do sistema prisional" title="Egressos do sistema prisional">Egressos do sistema prisional</option>
+          <option value="Estratégias solidárias de comercialização" title="Estratégias solidárias de comercialização">Estratégias solidárias de comercialização</option>
+          <option value="Fábricas e Empresas recuperadas em autogestão" title="Fábricas e Empresas recuperadas em autogestão">Fábricas e Empresas recuperadas em autogestão</option>
+          <option value="Finanças solidárias" title="Finanças solidárias">Finanças solidárias</option>
+          <option value="Fórum / Conselhos / Representações" title="Fórum / Conselhos / Representações">Fórum / Conselhos / Representações</option>
+          <option value="Grupos de consumo / Organização de consumidores" title="Grupos de consumo / Organização de consumidores">Grupos de consumo / Organização de consumidores</option>
+          <option value="Grupos de Jovens / Escolas" title="Grupos de Jovens / Escolas">Grupos de Jovens / Escolas</option>
+          <option value="Grupos de mulheres / Feminismos" title="Grupos de mulheres / Feminismos">Grupos de mulheres / Feminismos</option>
+          <option value="Habitação de Interesse Social" title="Habitação de Interesse Social">Habitação de Interesse Social</option>
+          <option value="Inclusão de pessoas com deficiência" title="Inclusão de pessoas com deficiência">Inclusão de pessoas com deficiência</option>
+          <option value="Iniciativas solidárias culturais / Artísticas" title="Iniciativas solidárias culturais / Artísticas">Iniciativas solidárias culturais / Artísticas</option>
+          <option value="Migrantes / refugiados e apátridas" title="Migrantes / refugiados e apátridas">Migrantes / refugiados e apátridas</option>
+          <option value="Mobilidade e Cooperativismo de plataforma" title="Mobilidade e Cooperativismo de plataforma">Mobilidade e Cooperativismo de plataforma</option>
+          <option value="Organização de Redes de EcoSol" title="Organização de Redes de EcoSol">Organização de Redes de EcoSol</option>
+          <option value="Pesca" title="Pesca">Pesca</option>
+          <option value="Pessoas em vulnerabilidade Social" title="Pessoas em vulnerabilidade Social">Pessoas em vulnerabilidade Social</option>
+          <option value="Populações tradicionais" title="Populações tradicionais">Populações tradicionais</option>
+          <option value="Questões de Gênero / LGBTQIAP+" title="Questões de Gênero / LGBTQIAP+">Questões de Gênero / LGBTQIAP+</option>
+          <option value="Saúde mental e saúde coletiva" title="Saúde mental e saúde coletiva">Saúde mental e saúde coletiva</option>
+          <option value="Sistemas agroalimentares solidários / agroecologia" title="Sistemas agroalimentares solidários / agroecologia">Sistemas agroalimentares solidários / agroecologia</option>
+          <option value="Tecnociência / Tecnologias sociais e ambientais" title="Tecnociência / Tecnologias sociais e ambientais">Tecnociência / Tecnologias sociais e ambientais</option>
+          <option value="Turismo de base comunitária" title="Turismo de base comunitária">Turismo de base comunitária</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="list-container" id="list-container"></div>
+    <button class="btn-download-filtered disabled" id="btn-filtered" onclick="downloadCSV()">⬇ Baixar resultado filtrado</button>
+  </div>
+
+  <div class="map-container">
+    <div id="map"></div>
+    <button class="btn-atualizar" onclick="abrirFormularioAtualizacao()" title="Enviar nova iniciativa ou sugerir correção">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      Cadastre / atualize sua iniciativa
+    </button>
+    <div class="region-bar">
+      <div class="region-bar-title">Por região</div>
+      <div id="region-stats"></div>
+    </div>
+    <div class="legenda">
+      <div class="legenda-title">Tipo de instituição</div>
+      <div class="legenda-item"><div class="legenda-dot" style="background:#D6342F"></div><span class="legenda-text">Pública Federal</span></div>
+      <div class="legenda-item"><div class="legenda-dot" style="background:#1F73B8"></div><span class="legenda-text">Pública Estadual</span></div>
+      <div class="legenda-item"><div class="legenda-dot" style="background:#B8860B"></div><span class="legenda-text">Pública Municipal</span></div>
+      <div class="legenda-item"><div class="legenda-dot" style="background:#1A1A1A"></div><span class="legenda-text">Privada Comunitária</span></div>
+    </div>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const ALL_DATA = [{"id": 1, "nome": "Núcleo de Estudos e Pesquisa Cultura, Trabalho e Pensamento Social", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Brasília (IFB-Campus São Sebastião)", "tipo": "Pública Federal", "municipio": "São Sebastião", "estado": "DF", "regiao": "CO", "coordenador": "Pedro Henrique Isaac Silva", "email": "pedro.silva@ifb.edu.br", "telefone": "(61) 98406-5366", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "Área Especial 2-, s/n - São Bartolomeu, São Sebastião - DF", "lat": "-15.89134", "lng": "-47.77996", "temas": "", "grupos": ""}, {"id": 2, "nome": "CRIAR Incubadora - Núcleo Incubador de Anápolis", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Goiás (IFG)", "tipo": "Pública Federal", "municipio": "Anápolis", "estado": "GO", "regiao": "CO", "coordenador": "Elza Gabriela", "email": "elza.miranda@ifg.edu.br", "telefone": "62 98205-5935", "rede": "IFEcoSol", "redes_sociais": "https://www.instagram.com/nucleo.incubador.anapolis/?__d=1%2F", "endereco": "Av. Pedro Ludovico S/N - Res. Reny Cury, Anápolis, Brazil 75131-457", "lat": "-16.372297", "lng": "-48.98092", "temas": "", "grupos": ""}, {"id": 3, "nome": "Incubadora Social", "instituicao": "Universidade Federal de Goiás (UFG)", "tipo": "Pública Federal", "municipio": "Goiânia", "estado": "GO", "regiao": "CO", "coordenador": "Fernando Antonio Ferreira Bartholo", "email": "fernandobarth@ufg.br", "telefone": "(62)984039227", "rede": "nenhuma", "redes_sociais": "https://incubadorasocial.ufg.br/", "endereco": "Casas de Projetos Sociais - Chácaras Califórnia, Goiânia - GO, 74045-155", "lat": "-16.60047", "lng": "-49.26508", "temas": "", "grupos": ""}, {"id": 4, "nome": "Incubadora Tecnológica de Cooperativas Populares do Pantanal e da Fronteira", "instituicao": "Universidade Federal de Mato Grosso do Sul (UFMS-Campus do Pantanal)", "tipo": "Pública Federal", "municipio": "Corumbá", "estado": "MS", "regiao": "CO", "coordenador": "Edgar Aparecido da Costa", "email": "edgarac10@gmail.com", "telefone": "(67) 99201-4470", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "Av. Rio Branco, 1270 - Universitário, Corumbá - MS, 79304-902", "lat": "-19.00036", "lng": "-57.63007", "temas": "", "grupos": ""}, {"id": 5, "nome": "ATIVA Incubadora de Empresas", "instituicao": "Instituto Federal de Mato Grosso (IFMT)", "tipo": "Pública Federal", "municipio": "Cuiabá", "estado": "MT", "regiao": "CO", "coordenador": "Cristhieli", "email": "cristhieli.viegas@ifmt.edu.br", "telefone": "65 99303-1405", "rede": "nenhuma", "redes_sociais": "https://cba.ifmt.edu.br/conteudo/noticia/ativa-incubadora-do-ifmt-reune-estagiarios-para-falar-de-educacao-financeira-e-empreendedorismo/", "endereco": "Rua Profa. Zulmira Canavarros, 93", "lat": "-15.59305", "lng": "-56.09905", "temas": "", "grupos": ""}, {"id": 6, "nome": "Grupo de Pesquisa em Alternativas ao Desenvolvimento, Inovação e Sustentabilidade (GPADIS)", "instituicao": "Universidade Federal do Mato Grosso (UFMT)", "tipo": "Pública Federal", "municipio": "Cuiabá", "estado": "MT", "regiao": "CO", "coordenador": "José Jaconias da Silva", "email": "josejaconias@gmail.com", "telefone": "(65) 99335-5201", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "R. Quarenta e Nove, 2367 - Boa Esperança, Cuiabá - MT, 78060-900", "lat": "-15.60789", "lng": "-56.06161", "temas": "", "grupos": ""}, {"id": 7, "nome": "Incubadora de Empreendimentos Econômicos Solidários e Sustentáveis", "instituicao": "Universidade do Estado de Mato Grosso (UNEMAT)", "tipo": "Pública Estadual", "municipio": "Cárceres", "estado": "MT", "regiao": "CO", "coordenador": "Laudemir Luiz Zart", "email": "zart@unemat.br", "telefone": "(65) 99989-9912", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "Av. Tancredo Neves, 1095 - Cavalhada II, Cáceres - MT, 78200-000", "lat": "-15.83306", "lng": "-57.8403", "temas": "", "grupos": ""}, {"id": 8, "nome": "Incubadora de Organizações Coletivas Autogeridas, Solidárias e Sustentáveis (IOCASS)", "instituicao": "Universidade do Estado de Mato Grosso (UNEMAT)", "tipo": "Pública Estadual", "municipio": "Tangará da Serra", "estado": "MT", "regiao": "CO", "coordenador": "Sandro Benedito Sguarezi", "email": "sandrosguarezi@unemat.br", "telefone": "(65) 99995-1078", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "Av. Inácio Bittencourt, 6967 E - Jardim Aeroporto, Tangará da Serra - MT, 78301-532", "lat": "-14.65195", "lng": "-57.434", "temas": "", "grupos": ""}, {"id": 9, "nome": "Núcleo de Pesquisa, Extensão e Estudos da Complexidade do Mundo do Trabalho", "instituicao": "Universidade do Estado de Mato Grosso (UNEMAT)", "tipo": "Pública Estadual", "municipio": "Tangará da Serra", "estado": "MT", "regiao": "CO", "coordenador": "Sonia Aparecida Beato Xomenes de Melo", "email": "melo.sonia@unemat.br", "telefone": "(65) 98135-7003", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "Av. Inácio Bittencourt, 6967 E - Jardim Aeroporto, Tangará da Serra - MT, 78301-532", "lat": "-14.65195", "lng": "-57.434", "temas": "", "grupos": ""}, {"id": 10, "nome": "Nucleo de Tecnologias Sociais", "instituicao": "Universidade Federal do Amazonas (UFAM)", "tipo": "Pública Federal", "municipio": "", "estado": "AM", "regiao": "N", "coordenador": "Nilson Rodrigues Barreiros", "email": "nilbarr@gmail.com", "telefone": "(92) 98170-0783", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "Av. General Rodrigo Octavio Jordão Ramos, 1200 - Coroado I, Manaus - AM, 69067-005", "lat": "-3.09866", "lng": "-59.9766", "temas": "", "grupos": ""}, {"id": 11, "nome": "Incubadora Tecnológica de Cooperativas Populares e Empreendimentos Econômicos (ITCPES)", "instituicao": "Universidade Federal do Pará (UFPA)", "tipo": "Pública Federal", "municipio": "Belém", "estado": "PA", "regiao": "N", "coordenador": "Armando Lírio", "email": "armandolirio@gmail.com", "telefone": "(91) 98297-6164", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/itcpes_ufpa/", "endereco": "R. Augusto Corrêa, 111 - Guamá, Belém - PA, 66073-040", "lat": "-1.47227", "lng": "-48.44927", "temas": "", "grupos": ""}, {"id": 12, "nome": "Incubadora Tecnológica de Desenvolvimento e Inovação\nde Cooperativas e Empreendimentos Solidários (INCUBITEC)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Pará (IFPA)", "tipo": "Pública Federal", "municipio": "Castanhal", "estado": "PA", "regiao": "N", "coordenador": "Maria Regina Sarkis Peixoto Joele \ne \nAdebaro Alves dos Reis", "email": "adebaro.reis@ifpa.edu.br", "telefone": "91 991675251", "rede": "IFEcosol e Unitrabalho", "redes_sociais": "https://www.instagram.com/incubitec_ifpa/", "endereco": "Av. Pres. Getúlio Vargas, 316 - Cristo Redentor, Castanhal - PA", "lat": "-1.298011", "lng": "-47.950844", "temas": "", "grupos": ""}, {"id": 13, "nome": "Incubadora de Empreendimentos Econômicos Solidários (IECOSOL)", "instituicao": "Universidade Federal do Oeste do Pará (UFOPA)", "tipo": "Pública Federal", "municipio": "Santarém", "estado": "PA", "regiao": "N", "coordenador": "Zilda Joaquina Cohen Gama dos Santos", "email": "zilda.santos@ufopa.edu.br", "telefone": "(93) 984049559", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/iecosol.ufopa_/", "endereco": "R. do Sale - Salé, Santarém - PA, 68040-390", "lat": "-2.41876", "lng": "-54.74031", "temas": "", "grupos": ""}, {"id": 14, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP-UNIR)", "instituicao": "Universidade Federal de Rondônia (UNIR)", "tipo": "Pública Federal", "municipio": "Porto Velho", "estado": "RO", "regiao": "N", "coordenador": "Rafael Christofoletti", "email": "itcp@unir.br", "telefone": "(69) 99270-9668", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/itcpunir/", "endereco": "Av. Pres. Dutra, 2965 - Olaria, Porto Velho - RO, 76801-058", "lat": "-8.763077", "lng": "-63.906826", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Populações tradicionais, Turismo de base comunitária, Fórum / Conselhos / Representações", "grupos": "Cooperativa CATANORTE\nAssociação RecicláMédici\nCooperativa CATAVIP\nColetivo de agricultura familiar do Movimento dos Atingidos por Barragens\nColetivo de Consumidores Agroecológicos de Porto Velho\nColetivo de indígenas (Warau e Paumari)"}, {"id": 15, "nome": "Incubadora Tecnológica de Cooperativas Populares e Empreendimentos Solidários (ITCPES-UFRR)", "instituicao": "Universidade Federal de Roraima (UFRR)", "tipo": "Pública Federal", "municipio": "Boa Vista", "estado": "RR", "regiao": "N", "coordenador": "Meire Joisy Almeida Pereira", "email": "Itcpes@ufrr.br", "telefone": "(95) 99112-2889", "rede": "nenhuma", "redes_sociais": "https://www.facebook.com/people/Itcpesufrr/100071512041186/", "endereco": "Avenida Capitão Ene Garcez, nº 2413, Campus Paricarana, Bloco IV, CEP: 69310-000, Boa Vista, Roraima", "lat": "-2.833372", "lng": "-60.693776", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Migrantes / refugiados e apátridas", "grupos": "Coofecs\ncoopana\nAssociação Feras do Amazonas\nAssociação de agricultores/as do Polo 1\nAssociação do Polo 4,\nAssociação de Agriculturores/as do Truaru,\nAssociação camponesas do Lavrado."}, {"id": 16, "nome": "Incubadora Tecnológica de Cooperativas Populares e Empreendimentos Solidários (ITCPES-UFRR)", "instituicao": "Universidade Federal de Roraima (UFRR-Campus de Paricarana)", "tipo": "Pública Federal", "municipio": "Paricarana", "estado": "RR", "regiao": "N", "coordenador": "Meire Joisy Almeida Pereira", "email": "Itcpes@ufrr.br\nmeire.joisy@ufrr.br", "telefone": "(95) 99112-2889\n(95) 981130658", "rede": "Unitrabalho", "redes_sociais": "https://www.facebook.com/p/Itcpesufrr-100071512041186/?_rdr", "endereco": "Av. Cap. Ene Garcês, 2413 - Aeroporto, Boa Vista - RR, 69310-000", "lat": "-2.836025", "lng": "-60.691613", "temas": "", "grupos": ""}, {"id": 17, "nome": "Núcleo de Economia Solidária (NESol)", "instituicao": "Universidade Federal do Tocantins (UFT)", "tipo": "Pública Federal", "municipio": "Palmas", "estado": "TO", "regiao": "N", "coordenador": "Célio Silva \ne\nEdi Benini", "email": "edibenini@gmail.com", "telefone": "(63) 99239-9215", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "Avenida NS 15, Quadra 109 Norte | Plano Diretor Norte\n(Bloco I, sala 18)", "lat": "-10.178", "lng": "-48.36225", "temas": "", "grupos": ""}, {"id": 18, "nome": "Incubadora Tecnológica de Economia Solidária (ITES-UFAL)", "instituicao": "Universidade Federal de Alagoas (UFAL)", "tipo": "Pública Federal", "municipio": "Arapiraca", "estado": "AL", "regiao": "NE", "coordenador": "Leonardo Leal", "email": "leonardo.leal@arapiraca.ufal.br", "telefone": "(71) 996114593", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/ites_ufal/", "endereco": "Av. Lourival Melo Mota, S/N\nTabuleiro do Martins\nMaceió - AL\nCEP 57072-900 - 1º andar, sala 225", "lat": "-9.554211", "lng": "-35.775722", "temas": "Estratégias solidárias de comercialização, Finanças solidárias, Inclusão de pessoas com deficiência, Fórum / Conselhos / Representações", "grupos": "Banco Comunitário Olhos D'Água;\nBanco Comunitário Laguna;\nBanco da Mulher;\n\nAssociação de Agricultores Alternativos;\nPonto de Comercialização Cooperativa Cheiro da Terra;\nCozinha do Campo."}, {"id": 19, "nome": "Incubadora de Empreendimentos Solidários (IESOL)", "instituicao": "Universidade Federal de Alagoas (UFAL)", "tipo": "Pública Federal", "municipio": "Maceió", "estado": "AL", "regiao": "NE", "coordenador": "Cezar Nonato Bezerra Candeias", "email": "cezar@cedu.ufal.br", "telefone": "(82) 999179342", "rede": "Unitrabalho", "redes_sociais": "https://unitrabalhoufal.blogspot.com/", "endereco": "Av. Lourival de Melo Mota, s/n - Tabuleiro dos Martins. 57072-970 - Maceió", "lat": "-9.55485", "lng": "-35.77304", "temas": "", "grupos": ""}, {"id": 20, "nome": "Incubadora Tecnológica de EcoSol (IFAL ECOSOL / IFAL - campus Marechal Deodoro)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Alagoas (IFAL - campus Marechal Deodoro)", "tipo": "Pública Federal", "municipio": "Marechal Deodoro", "estado": "AL", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "https://instagram.com/ecosol.ifal/", "endereco": "R. da Matança (Rua Lourival Alfredo), 176 - Poeira, Mal. Deodoro - AL, 57160-000", "lat": "-9.713206", "lng": "-35.893041", "temas": "", "grupos": ""}, {"id": 21, "nome": "Incubadora Tecnológica de EcoSol (IFAL ECOSOL / IFAL - campus Maceió)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Alagoas (IFAL - campus Maceió)", "tipo": "Pública Federal", "municipio": "Maceió", "estado": "AL", "regiao": "NE", "coordenador": "Diogo Rego", "email": "diogofar@gmail.com", "telefone": "71 996491705", "rede": "IFEcoSol", "redes_sociais": "https://instagram.com/ecosol.ifal/", "endereco": "R. Mizael Domingues, 530 - Centro, Maceió - AL, 57020-600", "lat": "-9.713206", "lng": "-35.731762", "temas": "", "grupos": ""}, {"id": 22, "nome": "Incubadora Tecnológica de EcoSol (IFAL ECOSOL / IFAL - campus Viçosa)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Alagoas (IFAL - campus Viçosa)", "tipo": "Pública Federal", "municipio": "Viçosa", "estado": "AL", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "https://instagram.com/ecosol.ifal/", "endereco": "R. Mota Lima, 35 - Centro, Viçosa - AL, 57700-000", "lat": "-9.664486", "lng": "-36.241255", "temas": "", "grupos": ""}, {"id": 23, "nome": "Incubadora Tecnológica de EcoSol (IFAL ECOSOL / IFAL - campus Batalha)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Alagoas (IFAL - campus Batalha)", "tipo": "Pública Federal", "municipio": "Batalha", "estado": "AL", "regiao": "NE", "coordenador": "José Ribeiro", "email": "", "telefone": "(82) 99068078", "rede": "IFEcoSol", "redes_sociais": "https://instagram.com/ecosol.ifal/", "endereco": "Av. Afrânio Lages, 391-453, Batalha - AL, 57420-000", "lat": "-9.370662", "lng": "-37.125941", "temas": "", "grupos": ""}, {"id": 24, "nome": "Incubadora Tecnológica de EcoSol (IFAL ECOSOL / IFAL - campus Satuba)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Alagoas (IFAL - campus Satuba)", "tipo": "Pública Federal", "municipio": "Satuba", "estado": "AL", "regiao": "NE", "coordenador": "Antônio Carlos", "email": "", "telefone": "(82) 91836679", "rede": "IFEcoSol", "redes_sociais": "https://instagram.com/ecosol.ifal/", "endereco": "R. Dezessete de Agosto, s/n - Zona Rural, Satuba - AL, 57120-000", "lat": "-9.66877", "lng": "-35.821284", "temas": "", "grupos": ""}, {"id": 25, "nome": "Incubadora Tecnológica de EcoSol (IFAL ECOSOL / IFAL - campus Santana do Ipanema)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Alagoas (IFAL - campus Santana do Ipanema)", "tipo": "Pública Federal", "municipio": "Santana do Ipanema", "estado": "AL", "regiao": "NE", "coordenador": "Érika Felix", "email": "", "telefone": "(81) 83569764", "rede": "IFEcoSol", "redes_sociais": "https://instagram.com/ecosol.ifal/", "endereco": "Rodovia AL 130, Km 4, Nº 1609, R. Domingos Acácio, Santana do Ipanema - AL, 57500-000", "lat": "-9.574143", "lng": "-37.24324", "temas": "", "grupos": ""}, {"id": 26, "nome": "Incubadora Tecnológica de EcoSol (IFAL ECOSOL / IFAL - campus Maragogi)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Alagoas (IFAL - campus Maragogi)", "tipo": "Pública Federal", "municipio": "Maragogi", "estado": "AL", "regiao": "NE", "coordenador": "Daniele", "email": "", "telefone": "(82) 81159464", "rede": "IFEcoSol", "redes_sociais": "https://instagram.com/ecosol.ifal/", "endereco": "Rodovia AL-101 Norte, Km 139. Bairro: Peroba, Maragogi - AL, 57955-000", "lat": "-9.384379", "lng": "-35.174759", "temas": "", "grupos": ""}, {"id": 27, "nome": "Incubadora Tecnológica de EcoSol (IFAL ECOSOL / IFAL - campus Arapiraca)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de Alagoas (IFAL - campus Arapiraca)", "tipo": "Pública Federal", "municipio": "Arapiraca", "estado": "AL", "regiao": "NE", "coordenador": "Marcelo", "email": "", "telefone": "(81) 92587483", "rede": "IFEcoSol", "redes_sociais": "https://instagram.com/ecosol.ifal/", "endereco": "Rodovia estadual AL-110, 359, bairro Deputado Nezinho, Arapiraca. Cep 57.317", "lat": "-8.942316", "lng": "-36.631401", "temas": "", "grupos": ""}, {"id": 28, "nome": "Incubadora Tecnologica de Economia Solidária e Gestão do Desenvolvimento Territorial (ITES-UFBA)", "instituicao": "Universidade Federal da Bahia (UFBA)", "tipo": "Pública Federal", "municipio": "Salvador", "estado": "BA", "regiao": "NE", "coordenador": "Genauto Carvalho de França Filho", "email": "ites@ufba.br", "telefone": "(82) 99950-5307", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/ites.ufba/", "endereco": "Av. Reitor Miguel Calmon s/n, Vale do Canela, Salvador, Bahia, Brazil", "lat": "-12.994889", "lng": "-38.519964", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Finanças solidárias, Populações tradicionais, Turismo de base comunitária, Grupos de mulheres / Feminismos, Grupos de Jovens / Escolas, Organização de Redes de EcoSol, Fórum / Conselhos / Representações", "grupos": "Bancos Comunitários (Santa Luzia, ECOLUZIA, ILHAMAR, Casa do Sol, Quilombola do Iguape, 2 de Julho),\n Padaria Comunitária Sonho Real, \nRadio Comunitária Ilhamar, \nASCOMAT, \nASCOMA, \nInfocentro Ilhamar, \nVivertur, \nRota da Liberdade, \nNúcleo de Ostricultura, \nNúcleo de Apicultura, \nNúcleo de Produção de Oléo de Coco, \nNúcleo de Produção de óleo de Dendê, \nNúcleo Orta Comunitária de Matarandiba, \nCDS, \nCecvi, \nnúcleo de artesanato quilombola. \nRede Ecoluzia, \nRede Cidadania Quilombola e \nRede Ecosmar"}, {"id": 29, "nome": "Incubadora Tecnológica de Cooperativas Populares / Núcleo de Cooperação e Ações em Políticas Públicas e Economia Solidária (ITCP/COAPPES)", "instituicao": "Universidade do Estado da Bahia (UNEB)", "tipo": "Pública Estadual", "municipio": "Salvador", "estado": "BA", "regiao": "NE", "coordenador": "Marcos Paulo Souza Novais", "email": "coappes@uneb.br", "telefone": "(71) 98782-4538", "rede": "Rede de ITCPs", "redes_sociais": "https://www.itcp.uneb.br/", "endereco": "Rua Silveira Martins, 2555, Cabula | UNEB", "lat": "-12.9524", "lng": "-38.45945", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Populações tradicionais, Grupos de mulheres / Feminismos, Pessoas em vulnerabilidade Social", "grupos": "Rede de Alimentação,\nColetivo Famílias em Luta Por Moradia"}, {"id": 30, "nome": "Incubadora de Empreendimentos Econômicos Solidários (INCUBA/Unitrabalho)", "instituicao": "Universidade do Estado da Bahia (UNEB)", "tipo": "Pública Estadual", "municipio": "Valença", "estado": "BA", "regiao": "NE", "coordenador": "Ronalda Barreto Silva", "email": "ronalda_barreto@uol.com.br", "telefone": "(71) 99964-7995", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/incuba_uneb/", "endereco": "Av. Boulevar, 363 - Valença, BA, 45400-000", "lat": "-13.34567", "lng": "-39.057", "temas": "", "grupos": ""}, {"id": 31, "nome": "Incubadora Tecnológica Criativa S³ (Social, solidária e Sustentável)", "instituicao": "Universidade do Estado da Bahia (UNEB)", "tipo": "Pública Estadual", "municipio": "Salvador", "estado": "BA", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "", "endereco": "Rua Silveira Martins, 2555, Cabula, Salvador", "lat": "-12.9524", "lng": "-38.45945", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Fábricas e Empresas recuperadas em autogestão, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Finanças solidárias, Antirracismo / Questão racial, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social, Tecnociência / Tecnologias sociais e ambientais", "grupos": ""}, {"id": 32, "nome": "Incubadora de Iniciativas de Economia Popular e Solidária (IEPS)", "instituicao": "Universidade Estadual de Feira de Santana (UEFS)", "tipo": "Pública Estadual", "municipio": "Feira de Santana", "estado": "BA", "regiao": "NE", "coordenador": "Adrielly Morais", "email": "", "telefone": "(75) 3161-8230", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/incubadora.popular.uefs/", "endereco": "Av. Transnordestina, s/n - Feira de Santana, Novo Horizonte - BA, 44036-900", "lat": "-12.20121", "lng": "-38.96935", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Fábricas e Empresas recuperadas em autogestão, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Populações tradicionais, Turismo de base comunitária, Grupos de mulheres / Feminismos, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social", "grupos": ""}, {"id": 33, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP-IFBA)", "instituicao": "Instituto Federal da Bahia (IFBA)", "tipo": "Pública Federal", "municipio": "Salvador", "estado": "BA", "regiao": "NE", "coordenador": "Alba Valéria Neiva Rodrigues", "email": "itcp@ifba.edu.br / albavaleria@ifba.edu.br / fabiobaldaia@ifba.edu.br", "telefone": "(71) 2102-9473", "rede": "Rede de ITCPs", "redes_sociais": "https://portal.ifba.edu.br/proex/acoes/incubadora-tecnologica-cooperativas-populares", "endereco": "Rua Emídio dos Santos s/n – bairro do Barbalho - campus de Salvador", "lat": "-12.962778", "lng": "-38.500594", "temas": "", "grupos": "Atualmente nenhum, a última ação envolveu a AMEVF Associação de Mulheres do Engenho Velho da Federação, em Salvador, por ocasião da pandemia"}, {"id": 34, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP-IFBA)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia da Bahia (IFBA)", "tipo": "Pública Federal", "municipio": "Salvador", "estado": "BA", "regiao": "NE", "coordenador": "Fabio Baldaia", "email": "fabiobaldaia@ifba.edu.br", "telefone": "71 988897731", "rede": "IFEcoSol", "redes_sociais": "https://portal.ifba.edu.br/proex/acoes/incubadora-tecnologica-cooperativas-populares", "endereco": "R. Emídio dos Santos, s/n - Barbalho, Salvador - BA, 40301-015", "lat": "-12.962276", "lng": "-38.500851", "temas": "", "grupos": ""}, {"id": 35, "nome": "Projeto TEIAS", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia da Bahia (IFBA)", "tipo": "Pública Federal", "municipio": "Irecê", "estado": "BA", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "", "endereco": "BA-148, KM 04 - nº 1800 - Universitário, Irecê - BA, 44900-000", "lat": "-11.32779", "lng": "-41.86216", "temas": "", "grupos": ""}, {"id": 36, "nome": "Incubadora Tecnológica de Economia Solidária (Intesol)", "instituicao": "Universidade da Integração Internacional da Lusofonia Afro-Brasileira (UNILAB)", "tipo": "Pública Federal", "municipio": "Redenção e Acarape", "estado": "CE", "regiao": "NE", "coordenador": "Clebia Mardonia Freitas Rabelo", "email": "intesol@unilab.edu.br", "telefone": "(85) 3332-6177", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/intesol.unilab/", "endereco": "Rua José Franco de Oliveira, s/n, campus Auroras - Unilab, Redenção - CE", "lat": "-4.216967", "lng": "-38.714236", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social", "grupos": "Cooperativas, \nassentamentos, \nMEI, \ngrupos informais sturtap e\noutros."}, {"id": 37, "nome": "Incubadora Tecnológica de Empreendimentos Populares e Solidários (ITEPS)", "instituicao": "Universidade Federal do Cariri (UFCA)", "tipo": "Pública Federal", "municipio": "Juazeiro do Norte", "estado": "CE", "regiao": "NE", "coordenador": "Eduardo / Victória Régia", "email": "iteps.proex@ufca.edu.br", "telefone": "(88) 99950-6556", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/iteps_ufca/", "endereco": "Universidade Federal do Cariri - Av. Ten. Raimundo Rocha, 1639 - Cidade Universitária, Juazeiro do Norte", "lat": "-7.256049", "lng": "-39.304775", "temas": "", "grupos": "Gestraf - Grupo de Economia Solidária e Turismo Rural da Agricultura Familiar\nAssociação Cariri Criativo\nFocaes - Fórum Caririense de Economia Solidária"}, {"id": 38, "nome": "Incubadora de Cooperativas Populares de Autogestão (IPCA)", "instituicao": "Universidade Federal do Ceará (UFC)", "tipo": "Pública Federal", "municipio": "Fortaleza", "estado": "CE", "regiao": "NE", "coordenador": "Osmar de Sá Ponte Junior", "email": "osmarsa@ufc.br", "telefone": "(85) 997121777", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "Av. Humberto Monte - Pici, Fortaleza - CE, 60455-760", "lat": "-3.74275", "lng": "-38.57317", "temas": "", "grupos": ""}, {"id": 39, "nome": "Incubadora de Empreendimentos Solidários (INCUBES)", "instituicao": "Universidade Federal da Paraíba (UFPB)", "tipo": "Pública Federal", "municipio": "João Pessoa", "estado": "PB", "regiao": "NE", "coordenador": "Vanderson Carneiro", "email": "incubesufpb1@gmail.com", "telefone": "(83) 3216-7654", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/projetoagees/", "endereco": "Campus I Lot. Cidade Universitaria, PB, 58051-900", "lat": "-7.137195", "lng": "-34.846069", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Mobilidade e Cooperativismo de plataforma, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Saúde mental e saúde coletiva, Populações tradicionais, Turismo de base comunitária, Grupos de mulheres / Feminismos, Organização de Redes de EcoSol, Fórum / Conselhos / Representações", "grupos": "Associação Arte Solidária – ARTSOL\nAssociação Mulheres Criativas Organizadas – AMCO\nAssociação dos artesãos Farol de Cabedelo\nAssociação MULHERES DE MÃOS DADAS – saboaria artesanal\nGrupo Informal – Arte Fio Por fio\nGrupo Informal – Arte Cura\nGrupos Informal – Art´s Mil\nGrupos Informal – Bem me Quero Mulheres Empoderadas\nGrupo de mulheres Artesãs Potiguara – COLMEIA\nGrupo Esperança Viva de Logradouros – PB\nGrupo de Mulheres EKUN DAYO\nFundo Rotativo Solidária Mulheres Empreendedoras – PB\nCooperativa Paraibana de Empreendimentos Economicos Solidários  ECOSOL –PB\n\nGrupo Informal ECOLANCHES\nAssociação dos Agricultores/as da Várzea Paraibana – ECOVARZEA\nAssociação Quilombo Senhor do Bonfim\nCooperativa Agropecuária Do Assentamento Dona Helena - COMASE \n\nBanco Comunitário de Desenvolvimento Jardim Botânico\nRede Paraibana de Bancos comunitários\n\nAssociação dos Catadores e Catadoras de Materiais Reutilizáveis e Recicláveis de João Pessoa CATAJAMPA\n\nOutros: Grupos participantes do projeto Enlacespb.org\n\""}, {"id": 40, "nome": "Incubadora Tecnológica de Empreendimentos Solidários (INCUTES)", "instituicao": "Instituto Federal da Paraíba (IFPB)", "tipo": "Pública Federal", "municipio": "João Pessoa", "estado": "PB", "regiao": "NE", "coordenador": "Andreza Ferreira Lima Paiva", "email": "incutes@ifpb.edu.br\nandreza.paiva@ifpb.edu.br", "telefone": "(83) 99119-5072", "rede": "Rede de ITCPs", "redes_sociais": "https://www.ifpb.edu.br/proexc/extensao-popular-e-rural/incutes-1", "endereco": "Av. Primeiro de Maio, 720 - Jaguaribe, João Pessoa - PB", "lat": "-7.129425", "lng": "-34.874505", "temas": "", "grupos": "1 - Grupo Mulheres de Coragem (Bairro do Engenho Velho/JP/PB) - fabricam sabão ecológico (2010)\n2- Grupo de Mãos dadas (Bairro São José/JP/PB) - Fabricam sabão ecológico (2010)\n3- Grupo de Mulheres de Ribeira (Bayeux /PB) - marisqueiras\n4 - Grupo Sereias da Penha (BAirro da Penha/JP/PB) (2011) - Artesanato de Biojóias com resíduos da Pesca\n5 - Grupo Águias (Pedras de Fogo/PB) - Produção de Bolsas Ecológicas\n6 - Cooperfab - Cooperativa de agricultores familiares de Bananeiras (2019 e 2020) - assessoramento na Elaboração de uma Rota Turística Rural na região."}, {"id": 41, "nome": "Núcleo Catalisador de Empreendimentos Solidários (NUCAES)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia da Paraíba (IFPB-Campus Guarabira)", "tipo": "Pública Federal", "municipio": "Guarabira", "estado": "PB", "regiao": "NE", "coordenador": "Andreza Ferreira Lima Paiva", "email": "andreza.paiva@ifpb.edu.br", "telefone": "83 991195072\n83 999004344", "rede": "IFEcoSol e Rede de ITCPs", "redes_sociais": "https://www.instagram.com/nucaes_ifpb/", "endereco": "Rua Professor Carlos Leonardo Arcoverde s.n. Rodovia PB-057, Guarabira - PB, 58200-000", "lat": "-6.856199", "lng": "-35.470446", "temas": "Sistemas agroalimentares solidários / agroecologia, Pesca, Artesãs e artesãos, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Egressos do sistema prisional, Turismo de base comunitária, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social", "grupos": ""}, {"id": 42, "nome": "Núcleo de Estudos e aplicação de Economia Solidária e outras Tecnologias Sociais (NEESTEC)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia da Paraíba (IFPB)", "tipo": "Pública Federal", "municipio": "João Pessoa", "estado": "PB", "regiao": "NE", "coordenador": "não encontrado", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "", "endereco": "Av. Primeiro de Maio, 720 - Jaguaribe, João Pessoa - PB", "lat": "-7.129425", "lng": "-34.874505", "temas": "", "grupos": ""}, {"id": 43, "nome": "Núcleo de Tecnologia Social e Economia Solidária (IFSOL)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia da Paraíba (IFPB-Campus Campina Grande)", "tipo": "Pública Federal", "municipio": "Campina Grande", "estado": "PB", "regiao": "NE", "coordenador": "não encontrado", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "@ifsol.cg", "endereco": "R. Tranqüilino Coelho Lemos, 671 - Dinamérica, Campina Grande - PB, 58432-300", "lat": "-7.22367", "lng": "-35.91078", "temas": "", "grupos": ""}, {"id": 44, "nome": "Incubadora Universitária de Empreendimentos Econômicos Solidários (IUEES)", "instituicao": "Universidade Federal de Campina Grande (UFCG)", "tipo": "Pública Federal", "municipio": "Campina Grande", "estado": "PB", "regiao": "NE", "coordenador": "Crislene Rodrigues da Silva Morais", "email": "crislene.rodrigues@professor.ufcg.edu.br\n\nincubadoraufcg@yahoo.com.br", "telefone": "(83) 99382-1112", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/iueesufcg/", "endereco": "Rua Aprígio Veloso, 882, Bairro Universitário, 58429-900 Campina Grande-PB.", "lat": "-7.21553", "lng": "-35.90921", "temas": "", "grupos": ""}, {"id": 45, "nome": "Incubadora de Cooperativas Populares (INCUBACOOP)", "instituicao": "Universidade Federal Rural de Pernambuco (UFRPE)", "tipo": "Pública Federal", "municipio": "Recife", "estado": "PE", "regiao": "NE", "coordenador": "Horasa Maria de Andrade", "email": "mausarda@yahoo.com.br; horasaa@ufrpe.br", "telefone": "(81) 99516-1917 e (87) 8824-4441", "rede": "Rede de ITCPs", "redes_sociais": "Não encontrei informações na web.", "endereco": "Rua Dom Manuel de Medeiros, s/n - Dois Irmãos, Recife - PE", "lat": "-8.016793", "lng": "-34.949497", "temas": "", "grupos": "Fábrica de Vassouras Ecológicas Mulheres que Geram Renda, em Brasílila Teimosa;\n Feira de Agricultura Familiar e Economia Solidária - FAFES;\nECOFEIRA, em São Lourenço da Mata/PE;\nFeira da Agricultura Familiar, Agroecologia e Economia Solidária da UFRPE;\n Mercado da Vida - Bonito/PE,\n Cooperativas de Catadores de Materiáris Recicláveis - Coopares e \nCooreplas, em Abreu e Lima."}, {"id": 46, "nome": "INCUBADORA DE TECNOLOGIAS SOCIAIS (INCUBATECS)", "instituicao": "Universidade Federal de Pernambuco (UFPE)", "tipo": "Pública Federal", "municipio": "Recife", "estado": "PE", "regiao": "NE", "coordenador": "Maira Galdino da Rocha Pitta", "email": "maria.pitta@ufpe.br", "telefone": "(81) 2126-8947", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/incubatecsdaufpe/", "endereco": "Av. Prof. Moraes Rego, 1235 - Cidade Universitária, Recife - PE", "lat": "-8.049662", "lng": "-34.951139", "temas": "", "grupos": "A INCUBADORA APOIA UMA REDE DE EMPREENDIMENTOS DE ECONOMIA SOLIDÁRIA FORMADO POR ASSOCIAÇÕES DE PRODUTORES DE PLANTAS MEDICINAIS E FITOTERÁPICOS. \n\nCENTRO DE SAÚDE ALTERNATIVA DA MURIBECA - CESAM \nCENTRO DE FORMAÇÃO E EDUCAÇÃO EM MEDICINA POPULAR - CEFOMP \nCENTRO DE PRÁTICAS NATURAIS DE SAÚDE DE CAMARAGIBE - CEPRANSC \nGRUPO DE SAÚDE CONDOR E CABO GATO - GSCCG"}, {"id": 47, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus Caicó)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus Caicó)", "tipo": "Pública Federal", "municipio": "Caicó", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "", "endereco": "RN-288, s/n - Nova, Caicó - RN, 59300-000", "lat": "-6.445719", "lng": "-37.068904", "temas": "", "grupos": ""}, {"id": 48, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus Ceará-Mirim)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus Ceará-Mirim)", "tipo": "Pública Federal", "municipio": "Ceará-Mirim", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "@ifsol.cm", "endereco": "406 Avenida Planalto, Ceará-Mirim, RN, 59580-000", "lat": "-5.650338", "lng": "-35.429258", "temas": "", "grupos": ""}, {"id": 49, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus Canguaretama)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus Canguaretama)", "tipo": "Pública Federal", "municipio": "Canguaretama", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "@ifsol_canguaretama", "endereco": "160 BR-101, S/N - Areia Branca, Canguaretama - RN, 59190-000", "lat": "-6.356592", "lng": "-35.162763", "temas": "", "grupos": ""}, {"id": 50, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus Ipanguaçu)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus Ipanguaçu)", "tipo": "Pública Federal", "municipio": "Ipanguaçu", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "@ifsol.ip", "endereco": "RN-118, s/n - Zona Rural, Ipanguaçu - RN, 59508-000", "lat": "-5.534236", "lng": "-36.871153", "temas": "", "grupos": ""}, {"id": 51, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus João Câmara)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus João Câmara)", "tipo": "Pública Federal", "municipio": "João Câmara", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "@ifsol_jc", "endereco": "BR-406, KM 73 3500 - Perímetro Rural, João Câmara - RN, 59550-000", "lat": "-5.542854", "lng": "-35.798454", "temas": "", "grupos": ""}, {"id": 52, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus Lages)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus Lages)", "tipo": "Pública Federal", "municipio": "Lajes", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "@ifsol_lajes", "endereco": "BR-304, Km 120, s/n - Centro, Lajes - RN, 59535-000", "lat": "-5.703678", "lng": "-36.235234", "temas": "", "grupos": ""}, {"id": 53, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus Macau)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus Macau)", "tipo": "Pública Federal", "municipio": "Macau", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "@ifsol.mc", "endereco": "RN-221, Macau - RN, 59500-000", "lat": "-5.150968", "lng": "-36.575112", "temas": "", "grupos": ""}, {"id": 54, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus Mossoró)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus Mossoró)", "tipo": "Pública Federal", "municipio": "Mossoró", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "@ifsol.mo", "endereco": "R. Raimundo Firmino de Oliveira, 400 - Conjunto Ulrick Graff, Mossoró - RN, 59628-330", "lat": "-5.211902", "lng": "-37.320869", "temas": "", "grupos": ""}, {"id": 55, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus Natal)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus Natal)", "tipo": "Pública Federal", "municipio": "Natal", "estado": "RN", "regiao": "NE", "coordenador": "Mauro Rogério de Almeida Vieira", "email": "mauro.vieira@ifrn.edu.br", "telefone": "84 996347722", "rede": "IFEcoSol", "redes_sociais": "@ifsol.ifzn", "endereco": "Av. Sen. Salgado Filho, 1559 - Tirol, Natal - RN, 59015-000", "lat": "-5.811353", "lng": "-35.204695", "temas": "", "grupos": ""}, {"id": 56, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus São Paulo do Potengi)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus São Paulo do Potengi)", "tipo": "Pública Federal", "municipio": "São Paulo do Potengi", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "@ifsol_spp", "endereco": "Av. Potengi, São Paulo do Potengi - RN, 59460-000", "lat": "-5.894414", "lng": "-35.755093", "temas": "", "grupos": ""}, {"id": 57, "nome": "Incubadora Tecnológica para o Fortalecimento dos Empreendimentos Solidários (IFSOL / IFRN - campus Pau dos Ferros)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte (IFRN - campus Pau dos Ferros)", "tipo": "Pública Federal", "municipio": "Pau dos Ferros", "estado": "RN", "regiao": "NE", "coordenador": "", "email": "", "telefone": "", "rede": "IFEcoSol", "redes_sociais": "@ifsol_pdf", "endereco": "BR-405 S/N, Pau dos Ferros - RN, 59900-000", "lat": "-6.145148", "lng": "-38.204321", "temas": "", "grupos": ""}, {"id": 58, "nome": "Núcleo Pegadas", "instituicao": "Universidade Federal do Rio Grande do Norte (UFRN)", "tipo": "Pública Federal", "municipio": "Natal", "estado": "RN", "regiao": "NE", "coordenador": "Sandra Rufino Santos", "email": "pegadasufrn@yahoo.com.br", "telefone": "(84)999851119", "rede": "ABEPETS\nREPOS", "redes_sociais": "https://www.instagram.com/pegadasufrn/\n\nhttps://www.facebook.com/PegadasUFRN/", "endereco": "Campus Universitário UFRN Lagoa Nova, CEP 59078-970 | Natal/RN", "lat": "-5.83852", "lng": "-35.20089", "temas": "", "grupos": ""}, {"id": 59, "nome": "Incubadora de Projetos de Economia Solidária (IPES)", "instituicao": "Universidade Federal do Rio Grande do Norte (UFRN-Campus Currais Novos)", "tipo": "Pública Federal", "municipio": "Currais Novos", "estado": "RN", "regiao": "NE", "coordenador": "Marcos Adller de Almeida Nascimento", "email": "marcosadller@gmail.com", "telefone": "(84) 991719118", "rede": "Unitrabalho", "redes_sociais": "", "endereco": "Rua Manoel Lopes Filho, 773, Currais Novos - RN, 59380-000", "lat": "-6.25289", "lng": "-36.53429", "temas": "", "grupos": ""}, {"id": 60, "nome": "Incubadora de Iniciativas e Empreendimentos Solidários (INICIES)", "instituicao": "Universidade Federal do Rio Grande do Norte (UFRN)", "tipo": "Pública Federal", "municipio": "Natal", "estado": "RN", "regiao": "NE", "coordenador": "Roberto Marinho Alves da Silva", "email": "roberto.alves@ufrn.br", "telefone": "84 996127696", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/inicies_incubadora/\n\nhttps://www.facebook.com/inicies/?locale=pt_BR", "endereco": "Av. Sen. Salgado Filho, 3000 - Lagoa Nova, Natal - RN, 59078-970", "lat": "-5.83762", "lng": "-35.19853", "temas": "", "grupos": ""}, {"id": 61, "nome": "Organização de Aprendizagem e Saberes em Iniciativas Solidárias - OASIS", "instituicao": "Universidade Federal do Rio Grande do Norte (UFRN)", "tipo": "Pública Federal", "municipio": "NATAL", "estado": "RN", "regiao": "NE", "coordenador": "Washington José de Sousa", "email": "wsufrn@gmail.com", "telefone": "(84)988437895", "rede": "Unitrabalho", "redes_sociais": "https://www.facebook.com/incubadoraoasis/?locale=pt_BR", "endereco": "Av. Sen. Salgado Filho, 3000 - Lagoa Nova, Natal - RN, 59078-970", "lat": "-5.83762", "lng": "-35.19853", "temas": "", "grupos": ""}, {"id": 62, "nome": "Incubadora de Economia Solidária (TECSOL)", "instituicao": "Universidade Tecnológica Federal do Paraná (UTFPR-Campus Curitiba)", "tipo": "Pública Federal", "municipio": "Curitiba", "estado": "PR", "regiao": "S", "coordenador": "Sergio Winkert", "email": "sergio.winkert.foz@gmail.com", "telefone": "(45) 99861-1761", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/tecsolutfpr/", "endereco": "Av. Sete de Setembro, 3165 - Rebouças, Curitiba - PR, 80230-901", "lat": "-25.438229", "lng": "-49.269125", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Grupos de Jovens / Escolas, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Tecnociência / Tecnologias sociais e ambientais", "grupos": "Feira Permanente de Economia Solidária; \nRede Mandala - Rede de Economia Solidária do Paraná; \nConselho Estadual de Economia Solidária; \nAssociação de Catadores de Almirante tamandaré"}, {"id": 63, "nome": "Incubadora de Empreendimentos Solidários (IESol)", "instituicao": "Universidade Estadual de Ponta Grossa (UEPG)", "tipo": "Pública Estadual", "municipio": "Ponta Grossa", "estado": "PR", "regiao": "S", "coordenador": "Reidy Rolim de Moura", "email": "iesol@uepg.br", "telefone": "(42) 3220-3464\n (42) 3220-3465", "rede": "Rede de ITCPs", "redes_sociais": "https://www2.uepg.br/iesol/\n\nhttps://www.instagram.com/iesol.uepg/", "endereco": "Praça Santos Andrade, 01 - Centro, Ponta Grossa - PR, 84010-330", "lat": "-25.085339", "lng": "-50.161263", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Saúde mental e saúde coletiva, Grupos de mulheres / Feminismos, Grupos de Jovens / Escolas, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social, Migrantes / refugiados e apátridas", "grupos": "Associação de Feirantes da Economia Solidária (AFESOL),\nAcampamento Maria Rosa do Contestado, \nGrupo de sacolas solidárias da Comunidade Emiliano Zapata,\nAssociação de Mulheres da Economia Solidária (AMES) e\nGrupo de Mulheres CAPS AD."}, {"id": 64, "nome": "Incubadora Tecnológica de Cooperativas Populares", "instituicao": "Universidade Federal do Paraná (UFPR)", "tipo": "Pública Federal", "municipio": "Curitiba", "estado": "PR", "regiao": "S", "coordenador": "Maria Rita Taques Michalski", "email": "Itcp@ufpr.br", "telefone": "(41) 3350-5651", "rede": "PROCOAS\nRede de ITCPs", "redes_sociais": "https://www.instagram.com/itcp_ufpr/", "endereco": "Rua dos Funcionários, 1540, Juvevê, Curitiba, Brazil 80035050", "lat": "-25.412704", "lng": "-49.24762", "temas": "Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Saúde mental e saúde coletiva, Egressos do sistema prisional, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social, Migrantes / refugiados e apátridas", "grupos": "COPASOL,\nMenos Pausa Mais Conhecimento,\nColmeia das Artesãs,\nD´Moore Alimentação saudável,\nCurandero Apotecario,\nCantina Maluco Beleza,\nPedacinho do Campo,\nErva doce Artes,\nAí que lindo,\nSaboaria Semear,\nARTES RD Gesso Decorativo,\nRefúgio Tekhoa,\nCOOPERVIDA,\nCCA Coletivo de Convivências Agroecológicas,\nConexion y energia,\n Associação Feirantes Solidários."}, {"id": 65, "nome": "INCUBADORA INDIOS", "instituicao": "Universidade Estadual do Oeste do Paraná (UNIOESTE)", "tipo": "Pública Estadual", "municipio": "Foz do Iguaçu", "estado": "PR", "regiao": "S", "coordenador": "Sergio Luiz Winkert", "email": "indios.unioeste@gmail.com", "telefone": "(45) 99861-1761", "rede": "Rede de ITCPs", "redes_sociais": "https://www.unioeste.br/portal/ciencia-e-inovacao/inova/empreendedorismo-na-universidade/incubadoras", "endereco": "R. Universitária, 1619 - Universitário, Cascavel - PR", "lat": "-24.986777", "lng": "-53.450799", "temas": "", "grupos": "SDS Cia Teatral\nColetivo Comunidade Ativa\nAtlética Bruxão"}, {"id": 66, "nome": "Programa Multidisciplinar de Estudos e Pesquisas sobre o Trabalho e os Movimentos Sociais", "instituicao": "Universidade Estadual de Maringá (UEM-Campus Umuarama)", "tipo": "Pública Estadual", "municipio": "Umuarama", "estado": "PR", "regiao": "S", "coordenador": "Cristiane Mengue Feniman Moritz", "email": "crisfeniman@yahoo.com.br\n\nunitrabalho@uem.br", "telefone": "(43) 99680-0995", "rede": "Unitrabalho", "redes_sociais": "https://unitrabalho.uem.br/\nhttps://www.facebook.com/UnitrabalhoUem/\nhttps://www.instagram.com/unitrabalho.uem/", "endereco": "Av. Ângelo Moreira da Fonseca, 1800 - Parque Danielle, Umuarama - PR, 87506-370", "lat": "-23.77929", "lng": "-53.32506", "temas": "", "grupos": ""}, {"id": 67, "nome": "Programa Multidisciplinar de Estudos e Pesquisas sobre o Trabalho e os Movimentos Sociais", "instituicao": "Universidade Estadual de Maringá (UEM)", "tipo": "Pública Estadual", "municipio": "Maringá", "estado": "PR", "regiao": "S", "coordenador": "Mara Lucy Castilho \ne\nMonica Reina da Silva Scapim", "email": "mrsescapim@uem.br", "telefone": "(44) 999351060 Monica (44)998330052", "rede": "Unitrabalho", "redes_sociais": "https://unitrabalho.uem.br/\nhttps://www.facebook.com/UnitrabalhoUem/\nhttps://www.instagram.com/unitrabalho.uem/", "endereco": "Av. Colombo, 5790 - Universidade Estadual de Maringá (UEM), Bloco A01 - Salas 06 e 08, Maringá (PR). CEP: 87020-900", "lat": "-23.40778", "lng": "-51.93592", "temas": "", "grupos": ""}, {"id": 68, "nome": "Incubadora Tecnológica de Empreendimentos Sociais Sustentados (INTES)", "instituicao": "Universidade Estadual de Londrina (UEL)", "tipo": "Pública Estadual", "municipio": "Londrina", "estado": "PR", "regiao": "S", "coordenador": "Simone Vinhas de Oliveira", "email": "vinhas@uel.br", "telefone": "(43) 3371-4225", "rede": "Unitrabalho", "redes_sociais": "https://www.uel.br/projetos/intes/antigo/institucional.php\nhttps://www.facebook.com/IncubadoraIntes/", "endereco": "Rodovia Celso Garcia Cid | Pr 445 Km 380 | Campus Universitário", "lat": "-23.32657", "lng": "-51.20375", "temas": "", "grupos": ""}, {"id": 69, "nome": "Núcleo de Desenvolvimento Social e Econômico (NUDESE)", "instituicao": "Universidade Federal do Rio Grande (FURG)", "tipo": "Pública Federal", "municipio": "Rio Grande", "estado": "RS", "regiao": "S", "coordenador": "Lucia Nobre", "email": "nudese@furg.br", "telefone": "(53) 99118-2738", "rede": "PROCOAS\nRede de ITCPs", "redes_sociais": "https://www.instagram.com/nudesefurg/\n\nhttps://nudese.furg.br", "endereco": "Avenida Itália, Km 8\nCampus Carreiros - FURG\nRio Grande/RS\n96203-900", "lat": "-32.071726", "lng": "-52.160657", "temas": "Sistemas agroalimentares solidários / agroecologia, Pesca, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Populações tradicionais, Fórum / Conselhos / Representações", "grupos": "Coopesmi, \ncooafan,\n cooperativa Santa Rita,\n associação de consumo responsável,\n \ngrupos de gastronomia,\n grupo de artesanato e\n grupo de confecção,"}, {"id": 70, "nome": "Núcleo de Estudos em Gestão Alternativa - Escola de Administração da (NEGA EA/UFRGS)", "instituicao": "Universidade Federal do Rio Grande do Sul (UFRGS)", "tipo": "Pública Federal", "municipio": "Porto Alegre", "estado": "RS", "regiao": "S", "coordenador": "Ana Mercesdes Sarria Icaza,\nFabio B. Meira \ne \nPedro de A. Costa", "email": "nega.grupoufrgs@gmail.com", "telefone": "(51) 98575-4743 Fabio; (51) 99191-7943 Ana; (51) 99113-2675 Pedro", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/nega.ufrgs/", "endereco": "Rua Washington Luís, 855, sala 331- Centro Histórico, Porto Alegre – RS, 90010-460", "lat": "-30.036988", "lng": "-51.231609", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Grupos de mulheres / Feminismos, Organização de Redes de EcoSol, Fórum / Conselhos / Representações", "grupos": "Banco Comunitário Justa Troca;\nBanco Comunitário da Cascata;\nAssociação Contraponto"}, {"id": 71, "nome": "Incubadora de Empreendimentos Solidários (Unilasalle)", "instituicao": "Universidade La Salle (UNILASALLE)", "tipo": "Privada Comunitária", "municipio": "Canoas", "estado": "RS", "regiao": "S", "coordenador": "Maria de Lourdes Borges", "email": "maria.borges@unilasalle.edu.br", "telefone": "(51) 3476-8340 - Cel.Coordenadora: (51) 99878-8499", "rede": "Rede de ITCPs", "redes_sociais": "https://www.unilasalle.edu.br/canoas/servicos/tecnosocial", "endereco": "Av. Victor Barreto, 2288 - Centro, Canoas - RS, 92010-000", "lat": "-29.916376", "lng": "-51.181222", "temas": "Catadoras e catadores de materiais recicláveis, Pessoas em vulnerabilidade Social", "grupos": "Cooperativas de Reciclagem:\n Renascer, Coopcamate, \nCooarlas de Canoas/RS; \nCooperativa Cootre de Esteio/RS e \nCooperativa Cooprevive de Sapucaia do Sul/RS"}, {"id": 72, "nome": "Incubadora de Empreendimentos de Economia Solidária (INEESOL-FURG)", "instituicao": "Universidade Federal do Rio Grande (FURG)", "tipo": "Pública Federal", "municipio": "São Lourenço do Sul", "estado": "RS", "regiao": "S", "coordenador": "Liandra Caldasso", "email": "ineesol.maress.furg@gmail.com", "telefone": "(21) 99797-3595", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/ineesol_furg/", "endereco": "Km 8 Avenida Itália Carreiros, Rio Grande - RS, 96203-900", "lat": "-32.071326", "lng": "-52.160786", "temas": "Sistemas agroalimentares solidários / agroecologia, Pesca, Artesãs e artesãos, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Populações tradicionais, Grupos de mulheres / Feminismos, Organização de Redes de EcoSol, Fórum / Conselhos / Representações", "grupos": "Cooperforte, \nGCR Jerivá, \nRede Reciclar"}, {"id": 73, "nome": "Incubadora Tecnológica de Empreendimentos Econômicos Solidários/Incubadora Tecsol\n(Núcleo Interdisciplinar de Tecnologias Sociais e Economia Solidária)", "instituicao": "Universidade Federal de Pelotas (UFPel)", "tipo": "Pública Federal", "municipio": "Pelotas", "estado": "RS", "regiao": "S", "coordenador": "Henrique Andrade Furtado de Mendonça", "email": "tecsol@ufpel.edu.br", "telefone": "(53) 3284-4323", "rede": "PROCOAS\nRede de ITCPs", "redes_sociais": "https://www.instagram.com/tecsolutfpr/", "endereco": "R. Gomes Carneiro, 01 - Balsa, Pelotas - RS, 96010-610", "lat": "-31.781052", "lng": "-52.323373", "temas": "Sistemas agroalimentares solidários / agroecologia, Pesca, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Fábricas e Empresas recuperadas em autogestão, Iniciativas solidárias culturais / Artísticas, Mobilidade e Cooperativismo de plataforma, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Saúde mental e saúde coletiva, Egressos do sistema prisional, Populações tradicionais, Turismo de base comunitária, Grupos de mulheres / Feminismos, Questões de Gênero / LGBTQIAP+, Antirracismo / Questão racial, Inclusão de pessoas com deficiência, Grupos de Jovens / Escolas, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Habitação de Interesse Social, Pessoas em vulnerabilidade Social, Migrantes / refugiados e apátridas", "grupos": "Usina Feminista, \nGrupo Agroecológico Raízes, \nRede Bem da Terra, \nSul-Sur Fairtrade Cooperativa Júnior"}, {"id": 74, "nome": "Incubadora Social", "instituicao": "Universidade Federal de Santa Maria (UFSM)", "tipo": "Pública Federal", "municipio": "Santa Maria", "estado": "RS", "regiao": "S", "coordenador": "Lucas Veiga Avila", "email": "incubadorasocial@ufsm.br\n\nprogredisantamaria@ufsm.br", "telefone": "(55) 3220 8321\n\n(55) 9 9158 0632", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/incubadorasocialufsm/\n\nhttps://www.ufsm.br/pro-reitorias/pre/incubadora-social", "endereco": "Sala 309 do Prédio da Antiga Reitoria da UFSM - R. Floriano Peixoto, 1184 - Centro, Santa Maria", "lat": "-29.687599", "lng": "-53.808255", "temas": "", "grupos": ""}, {"id": 75, "nome": "ITESS", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Sul (IFRS)", "tipo": "Pública Federal", "municipio": "Viamão", "estado": "RS", "regiao": "S", "coordenador": "Priscila Silva Esteves", "email": "priscila.esteves@viamao.ifrs.edu.br", "telefone": "51 992563076", "rede": "IFEcoSol", "redes_sociais": "", "endereco": "Av. Sen. Salgado Filho - São Lucas, Viamão - RS, 94410-970", "lat": "-30.084523", "lng": "-51.057526", "temas": "", "grupos": ""}, {"id": 76, "nome": "ITSR", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Sul (IFRS)", "tipo": "Pública Federal", "municipio": "Porto Alegre/Restinga", "estado": "RS", "regiao": "S", "coordenador": "Nilson Varella Rübenich", "email": "nilson.rubenich@restinga.ifrs.edu.br", "telefone": "51 981343900", "rede": "IFEcoSol", "redes_sociais": "https://www.instagram.com/its.ifrs.poa/", "endereco": "R. Alberto Hoffmann, 285 - Restinga, Porto Alegre - RS, 91791-508", "lat": "-30.140047", "lng": "-51.129846", "temas": "", "grupos": ""}, {"id": 77, "nome": "IRES", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Sul (IFRS)", "tipo": "Pública Federal", "municipio": "Osório", "estado": "RS", "regiao": "S", "coordenador": "Adriana Pancotto", "email": "adriana.pancotto@osorio.ifrs.edu.br", "telefone": "54 996517527", "rede": "IFEcoSol", "redes_sociais": "", "endereco": "R. Santos Dumont, 2127 - Albatroz, Osório - RS, 95520-000", "lat": "-29.903175", "lng": "-50.256522", "temas": "", "grupos": ""}, {"id": 78, "nome": "Autogestão", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Sul (IFRS)", "tipo": "Pública Federal", "municipio": "Bento Gonçalves", "estado": "RS", "regiao": "S", "coordenador": "Leane Maria Filipetto", "email": "leane.filipetto@bento.ifrs.edu.br", "telefone": "54 984066863", "rede": "IFEcoSol", "redes_sociais": "", "endereco": "Avenida Osvaldo Aranha, 540 | Bairro Juventude da Enologia | CEP: 95700-206 | Bento Gonçalves/RS", "lat": "-29.163649", "lng": "-51.522086", "temas": "", "grupos": ""}, {"id": 79, "nome": "Incubadora Social (IS-IFFar)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia Farrouilha (IFFar)", "tipo": "Pública Federal", "municipio": "Santa Maria", "estado": "RS", "regiao": "S", "coordenador": "Diogo Maus", "email": "diogo.maus@iffarroupilha.edu.br        incubadora.social@iffarroupilha.edu.br         incubadora.social@iffar.edu.br", "telefone": "55 991778981                      (55) 3218 9841", "rede": "IFEcoSol", "redes_sociais": "", "endereco": "Av. Pedro César Saccol, Eixo Secundário 8, nº 555 - Parque Tecnológico Industrial, Santa Maria - RS, 97030-040", "lat": "-29.681462", "lng": "-53.869583", "temas": "", "grupos": ""}, {"id": 80, "nome": "Incubadora Social (IS-IFFar)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia Farrouilha (IFFar)", "tipo": "Pública Federal", "municipio": "Alegrete", "estado": "RS", "regiao": "S", "coordenador": "Diogo Maus", "email": "diogo.maus@iffarroupilha.edu.br        incubadora.social@iffarroupilha.edu.br         incubadora.social@iffar.edu.br", "telefone": "56 991778981                      (55) 3218 9841", "rede": "IFEcoSol", "redes_sociais": "", "endereco": "Rodovia RS-377, s/n - Passo Novo, Alegrete - RS, 97555-000", "lat": "-29.707038", "lng": "-55.526213", "temas": "", "grupos": ""}, {"id": 81, "nome": "Incubadora Social (IS-IFFar)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia Farrouilha (IFFar)", "tipo": "Pública Federal", "municipio": "Santiago", "estado": "RS", "regiao": "S", "coordenador": "Diogo Maus", "email": "diogo.maus@iffarroupilha.edu.br        incubadora.social@iffarroupilha.edu.br         incubadora.social@iffar.edu.br", "telefone": "57 991778981                      (55) 3218 9841", "rede": "IFEcoSol", "redes_sociais": "", "endereco": "R. Tio Virgílio, 423 - Carlos Humberto, Santiago - RS, 97718-120", "lat": "-29.171909", "lng": "-54.8669", "temas": "", "grupos": ""}, {"id": 82, "nome": "Incubadora Social (IS-IFFar)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia Farrouilha (IFFar)", "tipo": "Pública Federal", "municipio": "Júlio de Castilhos", "estado": "RS", "regiao": "S", "coordenador": "Diogo Maus", "email": "diogo.maus@iffarroupilha.edu.br        incubadora.social@iffarroupilha.edu.br         incubadora.social@iffar.edu.br", "telefone": "58 991778981                      (55) 3218 9841", "rede": "IFEcoSol", "redes_sociais": "", "endereco": "RS-527, s/n - Distrito de São João do Barro Preto, Júlio de Castilhos - RS, 98130-000", "lat": "-29.182845", "lng": "-53.712628", "temas": "", "grupos": ""}, {"id": 83, "nome": "Incubadora Social (IS-IFFar)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia Farrouilha (IFFar)", "tipo": "Pública Federal", "municipio": "São Vicente do Sul", "estado": "RS", "regiao": "S", "coordenador": "Diogo Maus", "email": "diogo.maus@iffarroupilha.edu.br        incubadora.social@iffarroupilha.edu.br         incubadora.social@iffar.edu.br", "telefone": "59 991778981                      (55) 3218 9841", "rede": "IFEcoSol", "redes_sociais": "", "endereco": "R. Vinte de Setembro, 2616 - São Vicente do Sul, RS, 97420-000", "lat": "-29.701613", "lng": "-54.69663", "temas": "", "grupos": ""}, {"id": 84, "nome": "ITCP - NESOL - IFSul", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia Sul-rio-grandense (IFSul)", "tipo": "Pública Federal", "municipio": "Pelotas", "estado": "RS", "regiao": "S", "coordenador": "Alexandre de Pauli Bandeira", "email": "alexandrebandeira@ifsul.edu.br", "telefone": "53 8116-1968", "rede": "IFEcoSol e Rede de ITCPs", "redes_sociais": "https://www.instagram.com/nesolifsul?igsh=dG9hZWZmMHE4enBk", "endereco": "Praça 20 de Setembro, 455 - Centro, Pelotas - RS, 96015-360", "lat": "-31.765838", "lng": "-52.352132", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Organização de Redes de EcoSol, Fórum / Conselhos / Representações", "grupos": ""}, {"id": 85, "nome": "Incubadora de Empresas de Inovação Tecnológica e Impacto Socioambiental", "instituicao": "Universidade Regional do Noroeste do Estado do Rio Grande do Sul (Unijuí)", "tipo": "Privada Comunitária", "municipio": "Ijuí", "estado": "RS", "regiao": "S", "coordenador": "Maria Odete Santos Garcia Palharini", "email": "criatec@unijui.edu.br", "telefone": "(55) 3332-0212", "rede": "Unitrabalho", "redes_sociais": "https://www.criatecunijui.com.br/\nhttps://www.facebook.com/incubadoracriatec/\nhttps://www.instagram.com/criatec/", "endereco": "Rua do Bosque, 495, Bairro Universitário, Ijuí, RS, Brazil", "lat": "-28.38907", "lng": "-53.947464", "temas": "", "grupos": ""}, {"id": 86, "nome": "Incubadora de Empresas de Inovação Tecnológica e Impacto Socioambiental", "instituicao": "Universidade Regional do Noroeste do Estado do Rio Grande do Sul (Unijuí)", "tipo": "Privada Comunitária", "municipio": "Santa Rosa", "estado": "RS", "regiao": "S", "coordenador": "Maria Odete Santos Garcia Palharini", "email": "criatecsr@unijui.edu.br", "telefone": "(55) 3511-5200", "rede": "Unitrabalho", "redes_sociais": "https://www.facebook.com/Criatecincubadora\nhttps://www.instagram.com/criatecsantarosa", "endereco": "RS 344 km39, Sala A-302 - Unijuí, Santa Rosa, RS, Brazil", "lat": "-27.85257", "lng": "-54.49181", "temas": "", "grupos": ""}, {"id": 87, "nome": "Grupo Desenvolvimento, Inovação Social, Governança e Sustentabilidade (DISGOS)", "instituicao": "Universidade Federal de Santa Maria (UFSM)", "tipo": "Pública Federal", "municipio": "Santa Maria", "estado": "RS", "regiao": "S", "coordenador": "Rita Inês Pauli", "email": "rita.pauli@ufsm.br\ndisgos.ufsm@gmail.com", "telefone": "(55) 984412424", "rede": "nenhuma", "redes_sociais": "https://www.facebook.com/disgos.ufsm.5", "endereco": "Av. Roraima nº 1000 Cidade Universitária, Prédio:74C Sala:4158, Bairro - Camobi, Santa Maria - RS, 97105-900", "lat": "-29.72064", "lng": "-53.71468", "temas": "", "grupos": ""}, {"id": 88, "nome": "INCUBADORA MULTISETORIAL SEED", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia Sul-rio-grandense (IFSul)", "tipo": "Pública Federal", "municipio": "Sapiranga", "estado": "RS", "regiao": "S", "coordenador": "Ronise Santos", "email": "sg-copex@ifsul.edu.br", "telefone": "55 51 995043303", "rede": "IFEcoSol", "redes_sociais": "https://www.instagram.com/seed_sapiranga/", "endereco": "Av. Carlos Gilberto Eeis 155 - Oeste - Sapiranga - RS - CEP 93.300-000", "lat": "-29.64848", "lng": "-51.03195", "temas": "", "grupos": ""}, {"id": 89, "nome": "Incubadora tecnológica de Cooperativas Populares (ITCP-FURB)", "instituicao": "Universidade Regional de Blumenau (FURB)", "tipo": "Pública Municipal", "municipio": "Blumenau", "estado": "SC", "regiao": "S", "coordenador": "Claudia Sombrio Fronza", "email": "itcp@furb.br", "telefone": "(47) 3321-0528", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/itcp_furb/\n\nhttps://www.instagram.com/vitrinedaecosol/", "endereco": "Rua Antônio da Veiga, 140, Bloco L, Sala 106, Blumenau, 89030-103", "lat": "-26.90565", "lng": "-49.078239", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Mobilidade e Cooperativismo de plataforma, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Saúde mental e saúde coletiva, Egressos do sistema prisional, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social", "grupos": "- Alterblu;\n- Associação União Maior – Motoboys;\n- Associação Vitrine;\n- Aufasam;\n- Café com Arte;\n- Centro Público Vitrine da Economia Solidária de Blumenau e região;\n- Coletivo Aroeira;\n- Cooperreciblu;\n- Enloucrescer;\n- Fundo Integridade;\n- Garciarte;\n- Gaspar Arte;\n- Grupo de Compras Coletivas Consumo Consciente;\n- Pura Arte;\n- Verbo Tecer;\nIniciativas apoiadas:\n- Movimento FURB Federal; \n- Fórum de usuários do SUAS;\n- Conselho de Comunidade de Blumenau;\n- Cooperteia;\n- Rede COMUNS - Associação Comunitária de Saúde Mental."}, {"id": 90, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP-Uniplac)", "instituicao": "Universidade do Planalto Catarinense (UNIPLAC)", "tipo": "Privada Comunitária", "municipio": "Lages", "estado": "SC", "regiao": "S", "coordenador": "Josilaine Antunes Pereira", "email": "itcp@uniplaclages.edu.br", "telefone": "(49) 32511022", "rede": "Rede de ITCPs", "redes_sociais": "https://www.uniplaclages.edu.br/itcp\n\nhttps://www.facebook.com/itcp.uniplac/", "endereco": "Av. Mal. Castelo Branco, 170 - Universitário, Lages - SC, 88509-900", "lat": "-27.822523", "lng": "-50.316849", "temas": "Artesãs e artesãos, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Populações tradicionais, Turismo de base comunitária, Grupos de mulheres / Feminismos, Questões de Gênero / LGBTQIAP+, Antirracismo / Questão racial, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social", "grupos": "Atualmente acompanhamos apenas as Cooperativas de Resíduos sólidos da Região da AMURES, serão 5 centrais."}, {"id": 91, "nome": "Coletivo EcoSOL", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia Catarinense (IFC)", "tipo": "Pública Federal", "municipio": "Camboriú", "estado": "SC", "regiao": "S", "coordenador": "", "email": "ecosolifc@gmail.com", "telefone": "", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/ecosol.ifc/", "endereco": "R. Joaquim Garcia, s/n - Centro, Camboriú - SC", "lat": "-27.013022", "lng": "-48.658432", "temas": "", "grupos": ""}, {"id": 92, "nome": "Laboratório de Comercialização da Agricultura Familiar", "instituicao": "Universidade Federal de Santa Catarina (UFSC)", "tipo": "Pública Federal", "municipio": "Florianópolis", "estado": "SC", "regiao": "S", "coordenador": "Marlene Grade", "email": "marlene.grade@ufsc.br", "telefone": "(48) 98484-1208 (48) 3721-5404", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/lacaf_ufsc/", "endereco": "Rod. Admar Gonzaga, 1346 - Itacorubi, Florianópolis - SC, 88034-000", "lat": "-27.58194", "lng": "-48.50422", "temas": "", "grupos": ""}, {"id": 93, "nome": "Incubadora de Empreendimentos Sociais e Solidários (Incop)", "instituicao": "Universidade Federal de Ouro Preto (UFOP)", "tipo": "Pública Federal", "municipio": "João Monlevade", "estado": "MG", "regiao": "SE", "coordenador": "Wagner Ragi Curi Filho", "email": "incop@ufop.edu.br ; wagner@ufop.edu.br", "telefone": "(31) 98813-1966", "rede": "Rede de ITCPs e REPOS", "redes_sociais": "https://www.instagram.com/incop/", "endereco": "Rua Trinta e Seis, 115 - sala D201 - Loanda, João Monlevade - MG, 35931-014", "lat": "-19.83585", "lng": "-43.168", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Antirracismo / Questão racial, Fórum / Conselhos / Representações", "grupos": "Associação Maria Efigênia"}, {"id": 94, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP/UFSJ)", "instituicao": "Universidade Federal de São João del Rei (UFSJ)", "tipo": "Pública Federal", "municipio": "São João del Rei", "estado": "MG", "regiao": "SE", "coordenador": "Jean Carlos Machado Alves", "email": "itcp_ufsj@ufsj.edu.br\n jean@ufsj.edu.br", "telefone": "(32) 99120-2379’", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/itcp_ufsj/\nwww.itcpufsj.com", "endereco": "Av. Visc. do Rio Preto, S/N - Fábricas, São João del Rei - MG, 36301-360", "lat": "-21.10248", "lng": "-44.24847", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Mobilidade e Cooperativismo de plataforma, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Saúde mental e saúde coletiva, Inclusão de pessoas com deficiência, Grupos de Jovens / Escolas, Organização de Redes de EcoSol, Pessoas em vulnerabilidade Social", "grupos": ""}, {"id": 95, "nome": "Incubadora Tecnológica de Cooperativas Populares (Intecoop)", "instituicao": "Universidade Federal de Juiz de Fora (UFJF)", "tipo": "Pública Federal", "municipio": "Juiz de Fora", "estado": "MG", "regiao": "SE", "coordenador": "Ana Lívia de Souza Coimbra", "email": "intecoopufjf@gmail.com", "telefone": "(32) 2102-6311", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/intecoopufjf/", "endereco": "Av. Barão do Rio Branco, 3396 - Passos, Juiz de Fora - MG, 36021-630", "lat": "-21.771581", "lng": "-43.347209", "temas": "", "grupos": "Fórum Municipal de Economia Popular Solidária\nFórum Regional de Economia Popular Solidária da Zona da Mata Mineira \nCOOPEAFAMIJF\nMOGICO\nFEIRA É DAQUI\nLIXARTE \nTRABALHARTE\nRECRIAR\nMERCADO PRODUTOR DE CATAGUASES"}, {"id": 96, "nome": "Incubadora Tecnológica de Cooperativas Populares da (ITCP-UNIFAL)", "instituicao": "Universidade Federal de Alfenas (UNIFAL)", "tipo": "Pública Federal", "municipio": "Varginha", "estado": "MG", "regiao": "SE", "coordenador": "Ana Carolina Guerra", "email": "itcp@unifal-mg.edu.br", "telefone": "(35) 3219-8642", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/itcpunifal/", "endereco": "Av. Celina Ferreira Ottoni, 4000 - Padre Vitor, Varginha, Brazil 37048310", "lat": "-21.576307", "lng": "-45.41233", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Mobilidade e Cooperativismo de plataforma, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Saúde mental e saúde coletiva, Egressos do sistema prisional, Grupos de mulheres / Feminismos, Grupos de Jovens / Escolas, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social", "grupos": "- Coletivo de mulheres raízes da terra MST\n- Artesãos da APAC Alfenas\n- Grupo de jovens COOPFAM \n- Clube de Trocas"}, {"id": 97, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP-Unimontes)", "instituicao": "Universidade Estadual de Montes Claros (Unimontes)", "tipo": "Pública Estadual", "municipio": "Montes Claros", "estado": "MG", "regiao": "SE", "coordenador": "Gy Reis Gomes Brito", "email": "itcpuminontes@gmail.com", "telefone": "(38) 3229-8308", "rede": "Rede de ITCPs", "redes_sociais": "https://www.facebook.com/unimontesitcp/", "endereco": "R. Montese, 27-1 - Santa Rita I, Montes Claros - MG, 39400-390", "lat": "-16.729686", "lng": "-43.857892", "temas": "", "grupos": "RAÍZES DO RIACHAO, \nESSENCIAS DO CERRADO, \nASSOCIAÇÃO DE ARTESANTOS INDÍGENA XAKRIABÁ"}, {"id": 98, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP-UFV)", "instituicao": "Universidade Federal de Viçosa (UFV)", "tipo": "Pública Federal", "municipio": "Viçosa", "estado": "MG", "regiao": "SE", "coordenador": "Bianca A. Lima Costa", "email": "itcp@ufv.br", "telefone": "(32) 98821-6827", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/itcpufv/", "endereco": "Av. P H Rolfs, s/n - Campus Universitário, Viçosa - MG, 36570-900", "lat": "-20.760451", "lng": "-42.870064", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Saúde mental e saúde coletiva, Populações tradicionais, Fórum / Conselhos / Representações", "grupos": "Reciclagem Popular e Solidária (apoio pontual em função da falta de recursos) - ACAT. ACAMARE e Fórum Municipal Lixo e Cidadania;\n\nSaúde Mental - Semeart; \n\nAgricultura Familiar e Agroecologia - Feira de Economia Solidária e Agricultura Familiar Quintal Solidário (cerca de 20 empreendimentos participantes); \n\nFeira de Economia Solidária e Agricultura Familiar de Paula Cândido; Feira Quilombola do Buieié (atividades pontuais em 2023 em função da falta de recursos); \n\nSistema Participativo de Garantia Floriô;\n Fórum Municipal de Economia Popular Solidária; \nCoopermatas (Cooperativa do MST - início da parceria em 2023 a partir de atividades pontuais em função da falta de recursos)."}, {"id": 99, "nome": "Incubadora Tecnológica de Cooperativas Populares (INCUBACOOP - UFLA)", "instituicao": "Universidade Federal de Lavras (UFLA)", "tipo": "Pública Federal", "municipio": "Lavras", "estado": "MG", "regiao": "SE", "coordenador": "Stefania Bacattini Vaccaro", "email": "incubacoop.dap@ufla.br", "telefone": "(35) 3829-1758", "rede": "Rede de ITCPs", "redes_sociais": "instagram.com/incubacoop.ufla/", "endereco": "Trevo Rotatório Professor Edmir Sá Santos Universidade Federal de, Lavras - MG, 37203-202", "lat": "-21.231037", "lng": "-44.994823", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Catadoras e catadores de materiais recicláveis, Grupos de mulheres / Feminismos", "grupos": "AMAGRI PERDÕES\nFUNDAÇÃO HANNS R. NEUMANN DO BRASIL\nPROJETO CURUMIM NEPOMUCENO"}, {"id": 100, "nome": "Núcleo de pesquisa e extensão AlterNativas de Produção - UFMG", "instituicao": "Universidade Federal de Minas Gerais (UFMG)", "tipo": "Pública Federal", "municipio": "Belo Horizonte", "estado": "MG", "regiao": "SE", "coordenador": "Marcelo Alves de Souza", "email": "marceloas@ufmg.br", "telefone": "(31) 97562-9539", "rede": "Rede de ITCPs e REPOS", "redes_sociais": "https://ufmg.br/comunicacao/noticias/projeto-da-escola-de-engenharia-auxilia-catadores-durante-pandemia\n\nhttps://www.youtube.com/watch?v=Qyck9OuuH4s", "endereco": "Av. Pres. Antônio Carlos, 6627 - Pampulha, Belo Horizonte", "lat": "-19.862", "lng": "-43.95895", "temas": "", "grupos": ""}, {"id": 101, "nome": "Grupo de estudos, pesquisa e extensão em economia popular e solidária (Colméia)", "instituicao": "Universidade Federal de Minas Gerais (UFMG)", "tipo": "Pública Federal", "municipio": "Belo Horizonte", "estado": "MG", "regiao": "SE", "coordenador": "", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/ufmgcolmeia?igsh=cndoODA5NXN1amhv", "endereco": "Av. Pres. Antônio Carlos, 6627 - Pampulha, Belo Horizonte - MG, 31270-901", "lat": "-19.867638", "lng": "-43.96288", "temas": "", "grupos": ""}, {"id": 102, "nome": "Grupo de Pesquisa e Extensão sobre Conflitos e Confluências Rurais da Bacia do Rio Doce (OCDOCE)", "instituicao": "Universidade Federal de Itajubá (UNIFEI)", "tipo": "Pública Federal", "municipio": "Itabira", "estado": "MG", "regiao": "SE", "coordenador": "Leonardo Ferreira Reis", "email": "leofreis@unifei.edu.br", "telefone": "31 987332613", "rede": "REPOS", "redes_sociais": "https://ocdoce.unifei.edu.br/\nhttps://www.instagram.com/ocdoce/", "endereco": "Rua Irmã Ivone Drumond, 200 - LabEOT (Sala 1216), Itabira, MG", "lat": "-19.6732", "lng": "-43.21242", "temas": "", "grupos": ""}, {"id": 103, "nome": "Nucleo de Estudos Sobre o Trabalho Humano (NESTH)", "instituicao": "Universidade Federal de Minas Gerais (UFMG)", "tipo": "Pública Federal", "municipio": "Belo Horizonte", "estado": "MG", "regiao": "SE", "coordenador": "Juarez Guimares e prof. Bebeto", "email": "bebeto@fafich.ufmg.br", "telefone": "(31) 97130120", "rede": "Unitrabalho", "redes_sociais": "https://www.fafich.ufmg.br/nesth/projetos.html", "endereco": "Sala 4224 - FAFICH / UFMG - Av. Antonio Carlos, 6627. Belo Horizonte - MG", "lat": "-19.86652", "lng": "-43.96173", "temas": "", "grupos": ""}, {"id": 104, "nome": "Centro de Incubação de Empreendimentos Populares Solidários (CIEPS / UFU - campus Monte Carmelo)", "instituicao": "Universidade Federal de Uberlândia (UFU - campus Monte Carmelo)", "tipo": "Pública Federal", "municipio": "Monte Carmelo", "estado": "MG", "regiao": "SE", "coordenador": "Ana Carolina Silva Siquieroli", "email": "carol@ufu.br", "telefone": "(34) 99107-5011", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/cieps_ufu/\nhttp://www.cieps.proexc.ufu.br/", "endereco": "Unidade Araras - Rodovia LMG, 746 - km 01, Monte Carmelo - MG, 38500-000", "lat": "-18.7236", "lng": "-47.52426", "temas": "", "grupos": ""}, {"id": 105, "nome": "Centro de Incubação de Empreendimentos Populares Solidários (CIEPS / UFU - campus Pato de Minas)", "instituicao": "Universidade Federal de Uberlândia (UFU - campus Pato de Minas)", "tipo": "Pública Federal", "municipio": "Pato de Minas", "estado": "MG", "regiao": "SE", "coordenador": "Peterson Gandolfi", "email": "peterson@ufu.br", "telefone": "(34) 3268-4722", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/cieps_ufu/\nhttp://www.cieps.proexc.ufu.br/", "endereco": "Av. Getúlio Vargas, 230 -  Bairro Centro, Pato de Minas", "lat": "-18.59097", "lng": "-46.51711", "temas": "", "grupos": ""}, {"id": 106, "nome": "Centro de Incubação de Empreendimentos Populares Solidários (CIEPS / UFU - campus Pontal)", "instituicao": "Universidade Federal de Uberlândia (UFU - campus Pontal)", "tipo": "Pública Federal", "municipio": "Ituiutaba", "estado": "MG", "regiao": "SE", "coordenador": "Flander Calixto", "email": "flander@ufu.br", "telefone": "(34) 99107-5011", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/cieps_ufu/\nhttp://www.cieps.proexc.ufu.br/", "endereco": "R. Vinte, 1600 - Tupã, Ituiutaba - MG, 38304-402", "lat": "-19.0036", "lng": "-49.45705", "temas": "", "grupos": ""}, {"id": 107, "nome": "Centro de Incubação de Empreendimentos Populares Solidários (CIEPS / UFU - campus Uberlândia)", "instituicao": "Universidade Federal de Uberlândia (UFU - campus Uberlândia)", "tipo": "Pública Federal", "municipio": "Uberlândia", "estado": "MG", "regiao": "SE", "coordenador": "Cristiane Betanho", "email": "crisbetanho@ufu.br", "telefone": "(34) 99107-5011", "rede": "Unitrabalho", "redes_sociais": "https://www.instagram.com/cieps_ufu/\nhttp://www.cieps.proexc.ufu.br/", "endereco": "Av. João Naves de Ávila,, 2121 - Bloco 1S - Bairro Santa Mônica\nCampus Santa Mônica - Uberlândia-MG - CEP 38408-100", "lat": "-18.91878", "lng": "-48.25468", "temas": "", "grupos": ""}, {"id": 108, "nome": "Incubadora Tecnológica de Economia Solidária (ITES-IFRJ Niterói)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio de Janeiro (IFRJ)", "tipo": "Pública Federal", "municipio": "Niterói", "estado": "RJ", "regiao": "SE", "coordenador": "Etiane Araldi", "email": "ites.cnit@ifrj.edu.br", "telefone": "(21) 96504-2636", "rede": "IFEcoSol e Rede de ITCPs", "redes_sociais": "https://www.instagram.com/ites.ifrjniteroi/", "endereco": "Estr. Washington Luís, 1411 - Sapê, Niterói - RJ, 24315-375", "lat": "-22.892849", "lng": "-43.054248", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Estratégias solidárias de comercialização, Turismo de base comunitária, Grupos de mulheres / Feminismos, Grupos de Jovens / Escolas, Fórum / Conselhos / Representações", "grupos": "Fórum Municipal de Economia Solidária de Niterói, \nConselho Municipal de Ecosol, \n3 empreendimentos de alimentação saudável, \n2 cooperativas de catadores"}, {"id": 109, "nome": "Incubadora de Tecnologia Social da Coppe", "instituicao": "Universidade Federal do Rio de Janeiro (UFRJ)", "tipo": "Pública Federal", "municipio": "Rio de Janeiro", "estado": "RJ", "regiao": "SE", "coordenador": "Amanda Xavier\n e\n Rebeca Amaral (coordenação executiva)", "email": "itcp@itcp.coppe.ufrj.br / coordenacao@itcp.coppe.ufrj.br", "telefone": "(21) 3733-4144 / (21) 3733-4139", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/itcpufrj/", "endereco": "Av. Horácio Macedo, 2030 - Cidade Universitária da Universidade Federal do Rio de Janeiro, Rio de Janeiro - RJ CEP: 21941-598", "lat": "-22.861889", "lng": "-43.227873", "temas": "", "grupos": "\"Atualmente, temos três linhas de projetos acadêmicos dentro da incubadora: \n\nEDS Maker: atuar em diversas áreas carentes na falta de insumos, treinamento profissional, materiais didáticos ou modelos executáveis em escolas da rede estadual do Rio de Janeiro a partir de salas makers (desenvolvimento de metodologias ativas de ensino - bolsas PIBIC; produção de extrusora sustentável - bolsas PIBIT; engenharia e vetorização para a transição socioecológica na indústria do futuro - Brafitec - e projetos de ensino sustentável com kit arduíno.)\n\nTerritórios Sustentáveis: promover o desenvolvimento de locais e regiões a partir do gerenciamento de processos de forma sustentável em instituições (ReciclaCT: apoio em treinamentos e capacitações das equipes de limpeza e coleta seletiva de resíduos sólidos - PROFAEX; Desenvolvimento de uma rede unificada para a gestão de resíduos - passando por reajustes)\n\nEcossistema Inovador: elaborar e aperfeiçoar metodologias de incubação, tornando-se mais aderentes às necessidades dos empreendimentos dentro de uma ótica sistêmica (Modelos de incubação para ecossistemas integrados e cooperativos em inovação aplicados a projetos acadêmicos, empreendimentos econômicos solidários, e pequenas e médias empresas com viés social; Ferramentas de apoio à gestão inovadora sustentável de organizações de intermediação territorial."}, {"id": 110, "nome": "InTECSOL", "instituicao": "Universdaide Federal Fluminense (UFF)", "tipo": "Pública Federal", "municipio": "Volta Redonda", "estado": "RJ", "regiao": "SE", "coordenador": "", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/intecsoluff/", "endereco": "Rua Des. Ellis Hermydio Figueira, 783, Volta Redonda", "lat": "-22.50582", "lng": "-44.08496", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Saúde mental e saúde coletiva, Grupos de mulheres / Feminismos, Grupos de Jovens / Escolas, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social", "grupos": ""}, {"id": 111, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP-IFRJ Campus Realengo)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio de Janeiro (IFRJ)", "tipo": "Pública Federal", "municipio": "Rio de Janeiro", "estado": "RJ", "regiao": "SE", "coordenador": "Mariana Morette Pan", "email": "mariana.pan@ifrj.edu.br (e-mail da coordenadora) e dg.creal@ifrj.edu.br", "telefone": "(21) 96900-1235", "rede": "IFEcoSol e Rede de ITCPs", "redes_sociais": "https://www.instagram.com/itcp.creal/", "endereco": "Rua Prof. Carlos Wenceslau,  348. Realengo RJ", "lat": "-22.879852", "lng": "-43.43248", "temas": "", "grupos": "1. Projetos e iniciativas de geração de trabalho e renda da rede de saúde mental da Zona Oeste do Rio de Janeiro; \n2. Núcleo de produção Artesania Real"}, {"id": 112, "nome": "Incubadora Tecnológica de Cooperativas Populares", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia do Rio de Janeiro (IFRJ)", "tipo": "Pública Federal", "municipio": "ITCP Campus Realengo", "estado": "RJ", "regiao": "SE", "coordenador": "Mariana Morette Pan", "email": "mariana.pan@ifrj.edu.br", "telefone": "21 969001235", "rede": "Rede de ITCPs", "redes_sociais": "https://www.instagram.com/itcp.creal/", "endereco": "R. Prof. Carlos Wenceslau, 343 - Realengo, Rio de Janeiro - RJ, 21710-240", "lat": "-22.880021", "lng": "-43.433622", "temas": "", "grupos": ""}, {"id": 113, "nome": "Laboratório Interdisciplinar de Tecnologia Social (LITS)", "instituicao": "Universidade Federal do Rio de Janeiro (UFRJ)", "tipo": "Pública Federal", "municipio": "Macaé", "estado": "RJ", "regiao": "SE", "coordenador": "Camila Rolim Laricchia", "email": "camilalaricchia@macae.ufrj.br", "telefone": "21 974950210", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/lits_ufrj?igshid=NjIwNzIyMDk2Mg%3D%3D", "endereco": "Rua Aluízio da Silva Gomes, 50 - Novo Cavaleiros - Macaé - RJ - CEP: 27930-560", "lat": "-22.39011", "lng": "-41.8063", "temas": "", "grupos": ""}, {"id": 114, "nome": "Incubadora Tecnológica de Empreendimentos Solidários Sustentáveis (ITESS)", "instituicao": "Centro Federal de Educação Tecnológica Celso Suckow da Fonseca (CEFET/RJ)", "tipo": "Pública Federal", "municipio": "Rio de Janeiro", "estado": "RJ", "regiao": "SE", "coordenador": "Mauro Sandro dos Reis", "email": "Itess@cefet-rj.br", "telefone": "21 97980-2073", "rede": "IFEcoSol e Rede de ITCPs", "redes_sociais": "https://www.instagram.com/itess.cefet.rj/", "endereco": "Rua General Canabarros, 552, sala 101, Maracanã, Rio de Janeiro", "lat": "-22.912185", "lng": "-43.223653", "temas": "Sistemas agroalimentares solidários / agroecologia, Estratégias solidárias de comercialização, Populações tradicionais, Migrantes / refugiados e apátridas", "grupos": "Quilombo Sobara \nQuilombo María Joaquina"}, {"id": 115, "nome": "Núcleo de Solidariedade Técnica (Soltec/Nides)", "instituicao": "Universidade Federal do Rio de Janeiro (UFRJ)", "tipo": "Pública Federal", "municipio": "Rio de Janeiro", "estado": "RJ", "regiao": "SE", "coordenador": "Celso Alvear", "email": "celsoale@gmail.com", "telefone": "21 98881-0239", "rede": "ABEPETS\nPROCOAS\nREPOS", "redes_sociais": "https://www.nides.ufrj.br/index.php/programas/soltec", "endereco": "Sala ABC112, ligação ABC (fundos do Bloco B), sala 112 (perto do Itaú), Centro de Tecnologia, Cidade Universitária\nRio de Janeiro, RJ", "lat": "-22.85827", "lng": "-43.23077", "temas": "", "grupos": ""}, {"id": 116, "nome": "Incubadora Tecnológica e de Empreendimentos Sociais e Cooperativas Sociais (ITECS/IME)", "instituicao": "Universidade Estadual do Rio de Janeiro (UERJ)", "tipo": "Pública Estadual", "municipio": "Rio de Janeiro", "estado": "RJ", "regiao": "SE", "coordenador": "", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "www.cempre.ime.uerj.br/#!/itecs/", "endereco": "R. São Francisco Xavier, 524 - Maracanã, Rio de Janeiro - RJ, 20550-013", "lat": "-22.90732", "lng": "-43.23693", "temas": "Sistemas agroalimentares solidários / agroecologia, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Grupos de mulheres / Feminismos, Grupos de Jovens / Escolas, Pessoas em vulnerabilidade Social", "grupos": ""}, {"id": 117, "nome": "Incubadora Tecnológica de Gestão Social e Empreendimentos Solidários", "instituicao": "Universidade Federal Fluminense (UFF)", "tipo": "Pública Federal", "municipio": "Niterói", "estado": "RJ", "regiao": "SE", "coordenador": "Elaine Ribeiro Sigette", "email": "elainesigette@id.uff.br", "telefone": "21 979442288", "rede": "Rede de ITCPs", "redes_sociais": "https://iteges.uff.br/", "endereco": "R. São Paulo, 28 - Gragoatá, Niterói - RJ, 24040-115", "lat": "-22.89879", "lng": "-43.13306", "temas": "Sistemas agroalimentares solidários / agroecologia, Pesca, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Grupos de mulheres / Feminismos, Antirracismo / Questão racial, Organização de Redes de EcoSol, Fórum / Conselhos / Representações", "grupos": ""}, {"id": 118, "nome": "Incubadora de Tecnologias Sociais do Programa Observatório de Territórios Sustentáveis e Saudáveis da Bocaina", "instituicao": "Fundação Oswaldo Cruz (Fiocruz)", "tipo": "Pública Federal", "municipio": "Paraty", "estado": "RJ", "regiao": "SE", "coordenador": "Sidélia Silva", "email": "sidelia.silva@fiocruz.br", "telefone": "(24) 98210-6862", "rede": "nenhuma", "redes_sociais": "https://www.otss.org.br/incubadora\n\nhttps://open.spotify.com/episode/1NlPxxhgtOthJtKwxcntJo?si=34969a6e8e194936&nd=1&dlsi=676c111fc8b24b85", "endereco": "Rua Saíras - nº 163, Caborê - Paraty - Rj - Brasil - Cep: 23970-000", "lat": "-23.21736", "lng": "-44.7252", "temas": "", "grupos": ""}, {"id": 119, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP-USP)", "instituicao": "Universidade de São Paulo (USP)", "tipo": "Pública Estadual", "municipio": "São Paulo", "estado": "SP", "regiao": "SE", "coordenador": "Reinaldo Pacheco da Costa", "email": "itcp@usp.br", "telefone": "11 3091-4400\n11 99267-2446", "rede": "PROCOAS\nRede de ITCPs\nREPOS", "redes_sociais": "https://www.instagram.com/itcp.usp/", "endereco": "R. do Anfiteatro, 181 - Favo 37 - Butantã, São Paulo - SP, 05508-060", "lat": "-23.558218", "lng": "-46.721371", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Fábricas e Empresas recuperadas em autogestão, Iniciativas solidárias culturais / Artísticas, Mobilidade e Cooperativismo de plataforma, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Saúde mental e saúde coletiva, Egressos do sistema prisional, Grupos de mulheres / Feminismos, Questões de Gênero / LGBTQIAP+, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Migrantes / refugiados e apátridas", "grupos": "Cooperativa Terra e Liberdade\nViveiro da Comuna da Terra Irmã Alberta \nCooperativa Flor de Kantuta \nFeira Agroecológica e Cultural de Mulheres do Butantã \nCooperativa Libertas\nCooperAção\nAssociação de Mulheres da Economia Solidária - Amesol\nPonto de Economia Solidária e Cultura do Butantã"}, {"id": 120, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP - Unicamp)", "instituicao": "Universidade Estadual de Campinas (UNICAMP)", "tipo": "Pública Estadual", "municipio": "Campinas", "estado": "SP", "regiao": "SE", "coordenador": "Lais Silveira Fraga", "email": "itcp@itcp.unicamp.br", "telefone": "(19) 3521-5212", "rede": "PROCOAS\nRede de ITCPs", "redes_sociais": "https://www.instagram.com/itcp_unicamp/", "endereco": "Cidade Universitária Zeferino Vaz - Barão Geraldo, Campinas - SP, 13083-970", "lat": "-22.817332", "lng": "-47.065021", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Mobilidade e Cooperativismo de plataforma, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Saúde mental e saúde coletiva, Grupos de mulheres / Feminismos, Questões de Gênero / LGBTQIAP+, Antirracismo / Questão racial", "grupos": "Grupo de Consumo Responsável Elizabeth Teixeira - Pré-Assentamento Elizabeth Teixeira, Limeira-SP;\n\nAtuação com cooperativas de catadores de materiais recicláveis na região, atuação em rede e com catadoras trans avulsas."}, {"id": 121, "nome": "Incubadora de Cooperativas Populares (Incop/Unesp Assis)", "instituicao": "Universidade Estadual Paulista (UNESP)", "tipo": "Pública Estadual", "municipio": "Assis", "estado": "SP", "regiao": "SE", "coordenador": "Lucas Carvalho Peto", "email": "incopunespassis2006@gmail.com", "telefone": "(18) 3302-5897", "rede": "Rede de ITCPs", "redes_sociais": "https://www.assis.unesp.br/#!/extensao/incop/\n\nhttps://www.facebook.com/Incopunespassis/?locale=pt_BR", "endereco": "Av. Dom Antonio, 2100 , Assis, SP, Brazil", "lat": "-22.649784", "lng": "-50.438284", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Saúde mental e saúde coletiva, Grupos de mulheres / Feminismos, Questões de Gênero / LGBTQIAP+, Antirracismo / Questão racial, Inclusão de pessoas com deficiência, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Pessoas em vulnerabilidade Social, Migrantes / refugiados e apátridas", "grupos": "Cooperativa de Trabalho: Produção e Serviços de Catadores de Materiais Recicláveis de Assis e Região - COOCASSIS\nCooperativa de Trabalho do Catadores de Materiais Recicláveis de Rancharia - UNIVENCE\nCooperativa Paraguaçuense de Catadores de Materiais Recicláveis de Paraguaçu Paulista - COOPACAM\nAssociação de Catadores de Materiais Recicláveis de Palmital - ACIPAL\nCooperativa de Agricultores Agroecológicos de Boa Esperança - COOAABE\nRede de Comercialização Solidária \"\"Trem Bão\"\"\nFórum Assisense de Economia Solidária - FAES\nAssociação de Amigas/os, Familiares e Usuárias/os da Saúde Mental de Assis - PIRASSIS\""}, {"id": 122, "nome": "Núcleo Multidisciplinar e Integrado de Estudos, Formação e Intervenção em Economia Solidária (NuMI-EcoSol)", "instituicao": "Universidade Federal de São Carlos (UFSCar)", "tipo": "Pública Federal", "municipio": "São Carlos", "estado": "SP", "regiao": "SE", "coordenador": "Joelson Gonçalves de Carvalho", "email": "numiecosol@ufscar.br", "telefone": "(16) 3351-8701", "rede": "PROCOAS\nRede de ITCPs", "redes_sociais": "https://www.numiecosol.ufscar.br/pt-br/numi-ecosol", "endereco": "Rodovia Washington Luis, km 235 - São Carlos - SP - BR - CEP: 13565-905", "lat": "-21.981011", "lng": "-47.881285", "temas": "Sistemas agroalimentares solidários / agroecologia, Cozinha solidária e processamento de alimentos, Artesãs e artesãos, Iniciativas solidárias culturais / Artísticas, Mobilidade e Cooperativismo de plataforma, Estratégias solidárias de comercialização, Grupos de consumo / Organização de consumidores, Catadoras e catadores de materiais recicláveis, Finanças solidárias, Saúde mental e saúde coletiva, Egressos do sistema prisional, Populações tradicionais, Turismo de base comunitária, Grupos de mulheres / Feminismos, Questões de Gênero / LGBTQIAP+, Antirracismo / Questão racial, Inclusão de pessoas com deficiência, Grupos de Jovens / Escolas, Organização de Redes de EcoSol, Fórum / Conselhos / Representações, Habitação de Interesse Social, Pessoas em vulnerabilidade Social, Migrantes / refugiados e apátridas", "grupos": "1.  Implantação de EES com participação de usuários da saúde mental do município de Araraquara;\n2. Cooperativa de coletores de materiais recicláveis de São Carlos (COOPERVIDA); \n3. Feira de iniciativas de EcoSol no Campus São Carlos da UFSCar;\n4. Rede de Cooperação Solidária de São Carlos (Rede EcoSanca);\n5. Assentamento Santa Helena;\n6. Assentamento Capão das Antas;\n7. Assentamento Nova São Carlos;\n8. Cooperativa de Criadores de Abelhas do Assentamento Comunidade Agrária Nova São Carlos e região - Cooperabelhas;\n9. Movimento Tô Aqui - Piracicaba;\n10. Horta Comunitária Urbana Gera Juncal - Zona Leste de São Paulo;\n11. Asociacion Mans a terra - Albal, Esapnhã;\n12. Cooperativa de Motoristas de Transporte de Passageiros de São Carlos (COOPAMA);\n13. Associação da Comunidade dos Remanescentese de Quilombo da Fazenda - Ubatuba ;\n14. Incubação de Coletivo de pesquisadores no campus da UFSCAR de Sorocaba;\n15. Feira de Economia Solidária da praça XV em São Carlos."}, {"id": 123, "nome": "Feira EcoSolidária na UFSCar", "instituicao": "Universidade Federal de São Carlos (UFSCar)", "tipo": "Pública Federal", "municipio": "São Carlos", "estado": "SP", "regiao": "SE", "coordenador": "Wagner Molina (confirmar)", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/feiraecosol.ufscar/", "endereco": "Rodovia Washington Luis, km 235 - São Carlos - SP - BR - CEP: 13565-905", "lat": "-21.98756", "lng": "-47.88095", "temas": "", "grupos": ""}, {"id": 124, "nome": "Universidade Aberta à Economia Solidária (UAES)", "instituicao": "Universidade Federal de São Paulo (UNIFESP)", "tipo": "Pública Federal", "municipio": "São Paulo (Virtual e Multicamp)", "estado": "SP", "regiao": "SE", "coordenador": "Egeu Gomez Esteves", "email": "uaesunifesp@gmail.com", "telefone": "Não tem", "rede": "PROCOAS\nRede de ITCPs", "redes_sociais": "https://linktr.ee/uaesunifesp\n\nhttps://www.instagram.com/uaesunifesp/\n\nhttps://uaes.unifesp.br/", "endereco": "R. Sena Madureira, 1500, 3º Andar (Sala Paul Singer), Vila Clementino, São Paulo - SP, 04021-001", "lat": "-23.59158", "lng": "-46.64899", "temas": "", "grupos": "1) OSC Composta&Cultiva\n2) Cooper ABC - Cooperativa de Trabalho dos/as Moto Entregadores/as da Região Metropolitana da Cidade de São Paulo\n3) Empreender Delas \n4) O Bar Bibitantã\n5) Cooperativa Okavango de recuperação e reforma de moveis estofados\n6) Cooperativa Terra e Liberdade\n7) COLETIVO DE MULHERES SABOR DE CASA\n8) Ecociclistas Livres (LivresCoop)\n9) Drop Soldas Especiais \n10) PANIFICAÇÃO E CONFEITARIA DOCE ENCANTO\n11) OSC Consciência Pela Cidadania CONCIDADANIA\n12) Coletivo de Mulheres - Cozinha Solidária\n13) Instituto Socio Ambiental e Cultural da Vila dos Pescadores \n14) Instituto Social São Francisco \n15) Coletivo Cantinho do Café\n16) Ybyatã \n17) Associação Comunitária Flor do México \n18) Cooperativa de Trabalho Cipó Educação\n19) Ponto Benedito Economia Solidária e Cultura\""}, {"id": 125, "nome": "Incubadora Tecnológica de Cooperativas Populares (ITCP-Osasco)", "instituicao": "Universidade Federal de São Paulo (UNIFESP)", "tipo": "Pública Federal", "municipio": "Osasco", "estado": "SP", "regiao": "SE", "coordenador": "Beatriz Saes e Flavio Tayra", "email": "beatriz.sae@unifesp.br\n\nftayra@unifesp.br", "telefone": "Não tem", "rede": "Rede de ITCPs", "redes_sociais": "https://itcp.unifesp.br/", "endereco": "Rua Gen. Newton Estilac Leal, 932 - Quitaúna, Osasco - SP, 06190-170, Brasil", "lat": "-23.52916", "lng": "-46.80586", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Estratégias solidárias de comercialização", "grupos": ""}, {"id": 126, "nome": "Projeto Cabaça", "instituicao": "Universidade Federal de São Paulo (UNIFESP)", "tipo": "Pública Federal", "municipio": "São Paulo", "estado": "SP", "regiao": "SE", "coordenador": "Egeu Gomez Esteves\n\nLeda Monteiro", "email": "", "telefone": "Não tem", "rede": "nenhuma", "redes_sociais": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.instagram.com/projetocabaca/&ved=2ahUKEwj6muWm3LuPAxWrDrkGHVhFLhkQFnoECAwQAQ&usg=AOvVaw334Xbf5X21TnesZPB1wXak", "endereco": "Av. Jacu-Pêssego, 2630 - Itaquera, São Paulo - SP, 08260-001", "lat": "-23.57936", "lng": "-46.44468", "temas": "", "grupos": ""}, {"id": 127, "nome": "Cantina Solidária Escola", "instituicao": "Universidade Federal de São Paulo (UNIFESP)", "tipo": "Pública Federal", "municipio": "Santos", "estado": "SP", "regiao": "SE", "coordenador": "Lia Thieme Oikawa Zangirolani \ne\n Semíramis Domene", "email": "", "telefone": "13 98116-7064 (Lia)", "rede": "nenhuma", "redes_sociais": "", "endereco": "R. Silva Jardim, 136 - Vila Matias, Santos - SP, 11015-020 (não oficial, ainda)", "lat": "-23.94711", "lng": "-46.31935", "temas": "Sistemas agroalimentares solidários / agroecologia, Artesãs e artesãos, Estratégias solidárias de comercialização", "grupos": ""}, {"id": 128, "nome": "Feira de Agroecologia e Economia Solidária", "instituicao": "Universidade Federal de São Paulo (UNIFESP)", "tipo": "Pública Federal", "municipio": "Diadema", "estado": "SP", "regiao": "SE", "coordenador": "Classius Ferreira da Silva", "email": "", "telefone": "11-97505-5559", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/feiraunifespdiadema", "endereco": "Avenida Conceição, 515, Centro, Diadema - SP - bloco de acesso", "lat": "-23.6807", "lng": "-46.62713", "temas": "", "grupos": ""}, {"id": 129, "nome": "Quintal do campus", "instituicao": "Universidade Federal de São Paulo (UNIFESP)", "tipo": "Pública Federal", "municipio": "Guarulhos", "estado": "SP", "regiao": "SE", "coordenador": "Andrea Barbosa", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/quintaldocampus", "endereco": "Estr. do Caminho Velho, 333 - Jardim Nova Cidade, Guarulhos - SP, 07252-312", "lat": "-23.43993", "lng": "-46.40415", "temas": "", "grupos": ""}, {"id": 130, "nome": "Lab de Empreendimentos Econômicos (LabSol)", "instituicao": "Instituto Federal de Educação, Ciência e Tecnologia de São Paulo (IFSP)", "tipo": "Pública Federal", "municipio": "Birigui", "estado": "SP", "regiao": "SE", "coordenador": "Andréia de Alcantara Cerizza", "email": "andreiaac@ifsp.edu.br\n\nLabsol.bri@ifsp.edu.br", "telefone": "18 997831760", "rede": "IFEcoSol", "redes_sociais": "https://www.instagram.com/redeifecosol/", "endereco": "Rua Pedro Cavalo, 709 - Residencial Portal da Pérola II, Birigui - SP, 16201-407", "lat": "-21.24805", "lng": "-50.315018", "temas": "", "grupos": ""}, {"id": 131, "nome": "Núcleo de Economia Solidária (NESOL-USP)", "instituicao": "Universidade de São Paulo (USP)", "tipo": "Pública Estadual", "municipio": "São Paulo", "estado": "SP", "regiao": "SE", "coordenador": "Augusto Neiva", "email": "nesol@usp.br", "telefone": "(11) 3091-5828 / 3091-4400(fax)", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/nesolusp/", "endereco": "Avenida Lucio Martins Rodrigues, travessa 4 - bloco 28\nCidade Universitária", "lat": "-23.55448", "lng": "-46.72539", "temas": "", "grupos": ""}, {"id": 132, "nome": "Escritório Popular de Iniciativas Sociais e Solidárias (EPISS)", "instituicao": "Universidade Federal de São Paulo (UNIFESP)", "tipo": "Pública Federal", "municipio": "Osasco", "estado": "SP", "regiao": "SE", "coordenador": "Flávio Tayra", "email": "ftayra@hotmail.com", "telefone": "", "rede": "nenhuma", "redes_sociais": "", "endereco": "R. Gen. Newton Estilac Leal, 932 - Quitaúna, Osasco - SP, 06190-170", "lat": "-23.5291", "lng": "-46.8064", "temas": "", "grupos": ""}, {"id": 133, "nome": "Núcleo Interdisciplinar de Engenharia Popular (NIEP/UFABC)", "instituicao": "Universidade Federal do ABC (UFABC)", "tipo": "Pública Federal", "municipio": "São Paulo", "estado": "SP", "regiao": "SE", "coordenador": "Bruna Mendes", "email": "bruna.mendes@ufabc.edu.br", "telefone": "(11) 3356-7650", "rede": "PROCOAS", "redes_sociais": "https://www.instagram.com/niep_ufabc/", "endereco": "Campus Santo André, na Avenida dos Estados, 5001, Bairro Bangu, Santo André, SP", "lat": "-23.64402", "lng": "-46.52844", "temas": "", "grupos": ""}, {"id": 134, "nome": "Cru-Solo", "instituicao": "Universidade Federal do ABC (UFABC)", "tipo": "Pública Federal", "municipio": "São Paulo", "estado": "SP", "regiao": "SE", "coordenador": "", "email": "", "telefone": "", "rede": "nenhuma", "redes_sociais": "https://www.instagram.com/ccrusolo/", "endereco": "Av. dos Estados, 5001 - Bangú, Santo André - SP, 09280-560", "lat": "-23.6437", "lng": "-46.52853", "temas": "", "grupos": ""}];
+
+// Paleta de cores por tipo de instituição — Federal em vermelho, demais em alto contraste
+const CORES = {
+  'Pública Federal':'#D6342F',
+  'Pública Estadual':'#1F73B8',
+  'Pública Municipal':'#B8860B',
+  'Privada Comunitária':'#1A1A1A'
+};
+const COR_PADRAO = '#9aa0a6';
+const REGIOES = {N:'Norte',NE:'Nordeste',CO:'Centro-Oeste',SE:'Sudeste',S:'Sul'};
+
+// Vínculos institucionais exibidos no card (decisão da reunião de 01/07/2026)
+const VINC_UAES = {prefixo:'Vinculado à', nome:'Universidade Aberta à Economia Solidária', sigla:'UAES-Unifesp'};
+const VINC_NUMI = {prefixo:'Vinculado ao', nome:'NuMI-EcoSol/UFSCar', sigla:''};
+const VINCULOS = {123:VINC_NUMI,125:VINC_UAES,126:VINC_UAES,127:VINC_UAES,128:VINC_UAES,129:VINC_UAES,132:VINC_UAES};
+ALL_DATA.forEach(d => { if (VINCULOS[d.id]) d.vinculo = VINCULOS[d.id]; });
+
+let filteredData = ALL_DATA.filter(d=>d.id);
+let markers = {};
+let activeId = null;
+let toastTimer;
+let map;
+
+function initMap() {
+  map = L.map('map', {center:[-14.5,-51.5],zoom:4,zoomControl:false,attributionControl:true});
+
+  // Tile CartoDB Voyager — visual moderno, bom contraste
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:18
+  }).addTo(map);
+
+  L.control.zoom({position:'bottomleft'}).addTo(map);
+
+  ALL_DATA.forEach(d => {
+    if (!d.id) return;
+    if (!d.lat || !d.lng) return;
+    const lat = parseFloat(d.lat), lng = parseFloat(d.lng);
+    if (isNaN(lat)||isNaN(lng)) return;
+
+    const m = L.circleMarker([lat,lng], markerStyle(d.tipo,false)).addTo(map);
+    m.bindPopup(()=>buildPopup(d), {maxWidth:340,closeButton:true,offset:[0,-2]});
+    m.on('click', ()=>selectItem(d.id));
+    markers[d.id] = m;
+  });
+
+  map.on('popupclose', ()=>{
+    if (activeId&&markers[activeId]) markers[activeId].setStyle(markerStyle(ALL_DATA.find(x=>x.id===activeId)?.tipo,false));
+    document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('active'));
+    activeId = null;
+  });
+}
+
+function markerStyle(tipo, active) {
+  const color = CORES[tipo] || COR_PADRAO;
+  return {
+    radius: active ? 10 : 6.5,
+    fillColor: color,
+    color: active ? '#fff' : 'rgba(255,255,255,0.85)',
+    weight: active ? 3 : 2,
+    opacity: 1,
+    fillOpacity: active ? 1 : 0.88
+  };
+}
+
+function buildPopup(d) {
+  const color = CORES[d.tipo] || COR_PADRAO;
+  const locPrimary = [d.municipio, d.estado].filter(Boolean).join(', ') + (d.regiao ? ' — ' + (REGIOES[d.regiao]||d.regiao) : '');
+  const locFull = d.endereco
+    ? locPrimary + '<br><span style="font-size:13px;color:#9a9a9a">' + d.endereco + '</span>'
+    : locPrimary;
+
+  const temas = d.temas
+    ? d.temas.split(',').map(t=>t.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(t=>t.length>1)
+    : [];
+  const chips = temas.map(t=>`<span class="popup-chip">${t}</span>`).join('');
+  const redeClean = d.rede ? d.rede.replace(/\n+/g,', ').replace(/,\s*,/g,',').replace(/,\s*$/,'').trim() : '';
+  const rawLinks = d.redes_sociais ? d.redes_sociais.split('\n').map(l => l.trim()).filter(l => l.length > 0) : [];
+  const linkEls = rawLinks.map(l => `<a class="popup-link" href="${l}" target="_blank">↗ ${l.includes('instagram') ? 'Instagram' : 'Site'}</a>`).join('<span style="color:#ccc;margin:0 6px">·</span>');
+  const email = d.email ? `<a class="popup-link" href="mailto:${d.email.split('\n')[0].trim()}">✉ Contato</a>` : '';
+  const footerItems = [linkEls, email].filter(Boolean).join('<span style="color:#ccc;margin:0 6px">·</span>');
+  const footer = footerItems ? `<div class="popup-footer">${footerItems}</div>` : '';
+
+  return `<div class="popup-card">
+    <div class="popup-header" style="background:${color}">
+      <span class="popup-tipo-badge">${d.tipo||'Iniciativa'}</span>
+      <div class="popup-nome">${d.nome}</div>
+      <div class="popup-inst">${d.instituicao}</div>
+    </div>
+    <div class="popup-body">
+      ${d.vinculo?`<div class="popup-uaes-line">${d.vinculo.prefixo} ${d.vinculo.nome}${d.vinculo.sigla?`<span class="popup-uaes-sigla">(${d.vinculo.sigla})</span>`:''}</div>`:''}
+      <div class="popup-row">
+        <div class="popup-icon">📍</div>
+        <div class="popup-col">
+          <span class="popup-lbl">Localização</span>
+          <span class="popup-val">${locFull}</span>
+        </div>
+      </div>
+      ${redeClean&&redeClean!=='nenhuma'?`<div class="popup-row"><div class="popup-icon">🔗</div><div class="popup-col"><span class="popup-lbl">Rede</span><span class="popup-val">${redeClean}</span></div></div>`:''}
+      <div class="popup-row"><div class="popup-icon">◆</div><div class="popup-col"><span class="popup-lbl">Temas de atuação</span>${temas.length?'<div class="popup-chips">'+chips+'</div>':'<span class="popup-val" style="color:#9a9a9a;font-style:italic">Aguardando informação</span>'}</div></div>
+    </div>
+    ${footer}
+  </div>`;
+}
+
+function selectItem(id) {
+  if (activeId&&markers[activeId]) {
+    const prev = ALL_DATA.find(d=>d.id===activeId);
+    if (prev) markers[activeId].setStyle(markerStyle(prev.tipo,false));
+  }
+  activeId = id;
+  const d = ALL_DATA.find(x=>x.id===id);
+  if (!d||!markers[id]) return;
+  markers[id].setStyle(markerStyle(d.tipo,true));
+  markers[id].setPopupContent(buildPopup(d));
+  markers[id].openPopup();
+  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('active'));
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (el) {el.classList.add('active');el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+}
+
+function renderList(data) {
+  const c = document.getElementById('list-container');
+  c.innerHTML='';
+  data.forEach(d=>{
+    const div = document.createElement('div');
+    div.className='list-item'+(d.id===activeId?' active':'');
+    div.dataset.id=d.id;
+    const redeTag=(d.rede&&d.rede!=='nenhuma')?`<span class="tag tag-rede">${d.rede.split('\n')[0].trim().substring(0,22)}</span>`:'';
+    div.innerHTML=`<div class="item-nome">${d.nome}</div><div class="item-inst">${d.instituicao}</div><div class="item-tags"><span class="tag tag-regiao">${REGIOES[d.regiao]||d.regiao||'—'}</span>${redeTag}</div>`;
+    div.addEventListener('click',()=>{
+      selectItem(d.id);
+      if(d.lat&&d.lng) map.flyTo([parseFloat(d.lat),parseFloat(d.lng)],10,{duration:1});
+    });
+    c.appendChild(div);
+  });
+}
+
+function updateKPIs(data) {
+  document.getElementById('kpi-iniciativas').textContent=data.length;
+  document.getElementById('kpi-inst').textContent=new Set(data.map(d=>d.instituicao)).size;
+  document.getElementById('kpi-estados').textContent=new Set(data.filter(d=>d.estado).map(d=>d.estado.trim())).size;
+}
+
+function updateRegionStats(data) {
+  const counts={};
+  data.forEach(d=>{counts[d.regiao]=(counts[d.regiao]||0)+1;});
+  const max=Math.max(...Object.values(counts),1);
+  document.getElementById('region-stats').innerHTML=['NE','SE','S','CO','N'].map(r=>{
+    const n=counts[r]||0;if(!n)return'';
+    return`<div class="region-row"><span class="region-name">${REGIOES[r]}</span><div class="region-track"><div class="region-fill" style="width:${(n/max*100).toFixed(0)}%"></div></div><span class="region-num">${n}</span></div>`;
+  }).join('');
+}
+
+function updateMarkers(data) {
+  const ids=new Set(data.map(d=>d.id));
+  ALL_DATA.forEach(d=>{
+    if(!markers[d.id])return;
+    if(ids.has(d.id)){if(!map.hasLayer(markers[d.id]))markers[d.id].addTo(map);}
+    else{if(map.hasLayer(markers[d.id]))map.removeLayer(markers[d.id]);}
+  });
+}
+
+function updateFilteredBtn(data) {
+  const btn = document.getElementById('btn-filtered');
+  if (!btn) return;
+  const hasFilter = data.length < ALL_DATA.length;
+  btn.classList.toggle('disabled', !hasFilter);
+  btn.textContent = hasFilter
+    ? `⬇ Baixar ${data.length} resultado${data.length!==1?'s':''} filtrado${data.length!==1?'s':''}`
+    : '⬇ Baixar resultado filtrado';
+}
+
+function normaliza(str){
+  return (str||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function tokeniza(str){
+  return normaliza(str).split(/[^a-z0-9]+/).filter(Boolean);
+}
+// Radical simplificado p/ português: neutraliza plural e gênero (catadoras/catadores/catador → catador)
+function radical(w){
+  if(w.length<=3)return w;
+  w=w.replace(/s$/,'');
+  if(w.length>3)w=w.replace(/[aoe]$/,'');
+  return w;
+}
+// Casa a busca token a token pelo radical, tolerando singular/plural, gênero e grafia parcial
+function matchQuery(qNorm, alvoRaw){
+  const alvoTokens=tokeniza(alvoRaw);
+  const alvoRad=alvoTokens.map(radical);
+  const qTokens=qNorm.split(/[^a-z0-9]+/).filter(Boolean);
+  if(!qTokens.length)return true;
+  return qTokens.every(qt=>{
+    const qr=radical(qt);
+    return alvoTokens.some((t,i)=>{
+      const ar=alvoRad[i];
+      return t.startsWith(qt) || ar.startsWith(qr) || (qr.startsWith(ar)&&ar.length>=3);
+    });
+  });
+}
+
+window.applyFilters=function(){
+  const busca=normaliza(document.getElementById('f-busca').value.trim());
+  const regiao=document.getElementById('f-regiao').value;
+  const estado=document.getElementById('f-estado').value;
+  const tipo=document.getElementById('f-tipo').value;
+  const rede=document.getElementById('f-rede').value;
+  const tema=document.getElementById('f-tema').value;
+  document.getElementById('f-tema').title = tema || '';
+  const clearBtn=document.getElementById('search-clear');
+  if(clearBtn) clearBtn.classList.toggle('show', busca.length>0);
+  filteredData=ALL_DATA.filter(d=>{
+    if(!d.id)return false;
+    if(busca){
+      const alvo=[d.nome,d.instituicao,d.municipio,d.estado,d.rede,d.temas].join(' ');
+      if(!matchQuery(busca,alvo))return false;
+    }
+    if(regiao&&d.regiao!==regiao)return false;
+    if(estado&&d.estado!==estado)return false;
+    if(tipo&&d.tipo!==tipo)return false;
+    if(rede){
+      if(rede==='nenhuma'&&d.rede!=='nenhuma')return false;
+      if(rede!=='nenhuma'&&!d.rede.toLowerCase().includes(rede.toLowerCase()))return false;
+    }
+    if(tema&&!d.temas.toLowerCase().includes(tema.toLowerCase()))return false;
+    return true;
+  });
+  renderList(filteredData);updateKPIs(filteredData);updateMarkers(filteredData);updateRegionStats(filteredData);updateFilteredBtn(filteredData);
+  showToast(`${filteredData.length} ${filteredData.length===1?'iniciativa encontrada':'iniciativas encontradas'}`);
+};
+
+window.clearBusca=function(){
+  document.getElementById('f-busca').value='';
+  hideSuggest();
+  applyFilters();
+};
+
+window.clearFilters=function(){
+  ['f-busca','f-regiao','f-estado','f-tipo','f-rede','f-tema'].forEach(id=>document.getElementById(id).value='');
+  hideSuggest();
+  const clearBtn=document.getElementById('search-clear');
+  if(clearBtn) clearBtn.classList.remove('show');
+  filteredData=ALL_DATA.filter(d=>d.id);
+  renderList(filteredData);updateKPIs(filteredData);updateMarkers(filteredData);updateRegionStats(filteredData);updateFilteredBtn(filteredData);
+};
+
+// Botão de atualização do mapa — formulário a ser conectado posteriormente
+window.abrirFormularioAtualizacao=function(){
+  showToast('Formulário de atualização em breve');
+};
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+window.downloadAllCSV=function(){
+  const h=['ID','Nome','Instituição','Tipo','Município','Estado','Região','Email','Rede','Endereço','Temas'];
+  const rows=ALL_DATA.filter(d=>d.id).map(d=>[d.id,d.nome,d.instituicao,d.tipo,d.municipio,d.estado,REGIOES[d.regiao]||d.regiao,d.email,d.rede,d.endereco,d.temas?d.temas.replace(/\n/g,' ').substring(0,200):''].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv=[h.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='linha7_iniciativas_ecosol_completo.csv';a.click();
+};
+
+window.downloadCSV=function(){
+  const h=['ID','Nome','Instituição','Tipo','Município','Estado','Região','Email','Rede','Endereço','Temas'];
+  const rows=filteredData.filter(d=>d.id).map(d=>[d.id,d.nome,d.instituicao,d.tipo,d.municipio,d.estado,REGIOES[d.regiao]||d.regiao,d.email,d.rede,d.endereco,d.temas?d.temas.replace(/\n/g,' ').substring(0,200):''].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv=[h.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  const suffix = filteredData.length < ALL_DATA.length ? `_filtrado_${filteredData.length}` : '';
+  a.download=`linha7_iniciativas_ecosol${suffix}.csv`;a.click();
+};
+
+window.addEventListener('load',()=>{
+  // Data da última atualização dos dados (alterar a cada nova publicação)
+  const dataFormatada = '22 de julho de 2026';
+  const el = document.getElementById('update-date');
+  if (el) el.textContent = `Atualizado: ${dataFormatada}`;
+
+  // Popula o filtro de estados a partir dos dados
+  const selEstado=document.getElementById('f-estado');
+  if(selEstado){
+    const estados=[...new Set(ALL_DATA.filter(d=>d.id&&d.estado).map(d=>d.estado.trim()))].sort();
+    estados.forEach(uf=>{
+      const opt=document.createElement('option');
+      opt.value=uf;opt.textContent=uf;
+      selEstado.appendChild(opt);
+    });
+  }
+
+  construirIndiceBusca();
+  initMap();
+  window.addEventListener('resize', ()=>{ if (window.map && map.invalidateSize) map.invalidateSize(); });
+  renderList(filteredData);
+  updateKPIs(filteredData);
+  updateRegionStats(filteredData);
+});
+
+/* ── Autocompletar ── */
+let SEARCH_INDEX=[];
+let suggestActive=-1;
+
+function construirIndiceBusca(){
+  const vistos=new Set();
+  const add=(termo,tipo,peso)=>{
+    if(!termo)return;
+    const t=termo.toString().trim().replace(/\s+/g,' ');
+    if(t.length<2)return;
+    const chave=tipo+'|'+normaliza(t);
+    if(vistos.has(chave))return;
+    vistos.add(chave);
+    SEARCH_INDEX.push({termo:t,tipo,peso,norm:normaliza(t)});
+  };
+  // Temas e redes a partir dos próprios seletores (fonte canônica)
+  document.querySelectorAll('#f-tema option').forEach(o=>{if(o.value)add(o.value,'Tema',1);});
+  document.querySelectorAll('#f-rede option').forEach(o=>{if(o.value&&o.value!=='nenhuma')add(o.value,'Rede',2);});
+  // Cidades, instituições e iniciativas a partir dos dados
+  ALL_DATA.filter(d=>d.id).forEach(d=>{
+    add(d.municipio,'Cidade',3);
+    add(d.instituicao,'Instituição',4);
+    add(d.nome,'Iniciativa',5);
+  });
+}
+
+function destacar(termo,qNorm){
+  const alvo=normaliza(termo);
+  const i=alvo.indexOf(qNorm);
+  if(i<0||!qNorm)return termo;
+  return termo.slice(0,i)+'<mark>'+termo.slice(i,i+qNorm.length)+'</mark>'+termo.slice(i+qNorm.length);
+}
+
+function calcularSugestoes(qNorm){
+  const res=[];
+  for(const it of SEARCH_INDEX){
+    if(matchQuery(qNorm,it.termo)){
+      // pontua: começa-com vence contém; termos mais curtos e categorias mais amplas primeiro
+      const comeca=it.norm.startsWith(qNorm)?0:1;
+      res.push({...it,ordem:comeca*100+it.peso*10+Math.min(it.termo.length,40)/40});
+    }
+  }
+  res.sort((a,b)=>a.ordem-b.ordem);
+  return res.slice(0,8);
+}
+
+window.onSearchInput=function(){
+  const input=document.getElementById('f-busca');
+  const qNorm=normaliza(input.value.trim());
+  const box=document.getElementById('suggest-box');
+  suggestActive=-1;
+  applyFilters();
+  if(!qNorm){hideSuggest();return;}
+  const sugestoes=calcularSugestoes(qNorm);
+  if(!sugestoes.length){
+    box.innerHTML='<div class="suggest-empty">Nenhuma sugestão — mostrando resultados aproximados.</div>';
+    box.classList.add('show');
+    return;
+  }
+  box.innerHTML=sugestoes.map((s,i)=>
+    `<div class="suggest-item" role="option" data-termo="${s.termo.replace(/"/g,'&quot;')}" onmousedown="event.preventDefault()" onclick="escolherSugestao(this)">
+       <span class="suggest-text">${destacar(s.termo,qNorm)}</span>
+       <span class="suggest-type">${s.tipo}</span>
+     </div>`).join('');
+  box.classList.add('show');
+};
+
+window.escolherSugestao=function(el){
+  const termo=el.getAttribute('data-termo');
+  document.getElementById('f-busca').value=termo;
+  hideSuggest();
+  applyFilters();
+};
+
+window.onSearchKey=function(e){
+  const box=document.getElementById('suggest-box');
+  const itens=box.querySelectorAll('.suggest-item');
+  if(!box.classList.contains('show')||!itens.length){
+    if(e.key==='Escape')hideSuggest();
+    return;
+  }
+  if(e.key==='ArrowDown'){e.preventDefault();suggestActive=(suggestActive+1)%itens.length;marcarAtivo(itens);}
+  else if(e.key==='ArrowUp'){e.preventDefault();suggestActive=(suggestActive-1+itens.length)%itens.length;marcarAtivo(itens);}
+  else if(e.key==='Enter'){if(suggestActive>=0){e.preventDefault();escolherSugestao(itens[suggestActive]);}else{hideSuggest();}}
+  else if(e.key==='Escape'){hideSuggest();}
+};
+
+function marcarAtivo(itens){
+  itens.forEach((el,i)=>el.classList.toggle('active',i===suggestActive));
+  if(suggestActive>=0)itens[suggestActive].scrollIntoView({block:'nearest'});
+}
+
+window.hideSuggest=function(){
+  const box=document.getElementById('suggest-box');
+  if(box){box.classList.remove('show');box.innerHTML='';}
+  suggestActive=-1;
+};
+
+// Fecha a caixa ao clicar fora do campo
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.search-group'))hideSuggest();
+});
+</script>
+</body>
+</html>
