@@ -217,6 +217,11 @@ select:focus{outline:none;border-color:var(--ocre);}
   .suggest-box{max-height:180px;}
 }
 </style>
+<!-- Umami Cloud — analytics sem cookies e sem dados pessoais.
+     data-domains restringe a coleta ao endereço publicado; acrescente novos domínios separados por vírgula. -->
+<script defer src="https://cloud.umami.is/script.js"
+        data-website-id="d5e3f40e-50bc-4b96-9254-2f855f8de4e6"
+        data-domains="meyrele.github.io"></script>
 </head>
 <body>
 
@@ -263,7 +268,7 @@ select:focus{outline:none;border-color:var(--ocre);}
       <div class="filter-grid">
       <div class="filter-group">
         <label class="filter-label" for="f-regiao">Região</label>
-        <select id="f-regiao" onchange="applyFilters()">
+        <select id="f-regiao" onchange="applyFilters();rastrearFiltro(this)">
           <option value="">Todas as regiões</option>
           <option value="N">Norte</option>
           <option value="NE">Nordeste</option>
@@ -274,13 +279,13 @@ select:focus{outline:none;border-color:var(--ocre);}
       </div>
       <div class="filter-group">
         <label class="filter-label" for="f-estado">Estado</label>
-        <select id="f-estado" onchange="applyFilters()">
+        <select id="f-estado" onchange="applyFilters();rastrearFiltro(this)">
           <option value="">Todos os estados</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label" for="f-tipo">Tipo</label>
-        <select id="f-tipo" onchange="applyFilters()">
+        <select id="f-tipo" onchange="applyFilters();rastrearFiltro(this)">
           <option value="">Todos os tipos</option>
           <option value="Pública Federal">Pública Federal</option>
           <option value="Pública Estadual">Pública Estadual</option>
@@ -290,7 +295,7 @@ select:focus{outline:none;border-color:var(--ocre);}
       </div>
       <div class="filter-group">
         <label class="filter-label" for="f-rede">Rede</label>
-        <select id="f-rede" onchange="applyFilters()">
+        <select id="f-rede" onchange="applyFilters();rastrearFiltro(this)">
           <option value="">Todas as redes</option>
           <option value="Rede de ITCPs">Rede de ITCPs</option>
           <option value="IFEcoSol">IFEcoSol</option>
@@ -304,7 +309,7 @@ select:focus{outline:none;border-color:var(--ocre);}
       </div>
       <div class="filter-group">
         <label class="filter-label" for="f-tema">Tema de atuação</label>
-        <select id="f-tema" onchange="applyFilters()">
+        <select id="f-tema" onchange="applyFilters();rastrearFiltro(this)">
 <option value="">Todos os temas</option>
           <option value="Antirracismo / Questão racial" title="Antirracismo / Questão racial">Antirracismo / Questão racial</option>
           <option value="Artesãs e artesãos" title="Artesãs e artesãos">Artesãs e artesãos</option>
@@ -375,6 +380,19 @@ const CORES = {
 const COR_PADRAO = '#9aa0a6';
 const REGIOES = {N:'Norte',NE:'Nordeste',CO:'Centro-Oeste',SE:'Sudeste',S:'Sul'};
 
+/* ── Rastreamento de uso (Umami) ──
+   Envia eventos nomeados ao painel do Umami. Se o script não carregou (bloqueador, ID ausente,
+   domínio não listado), a chamada é ignorada e o mapa segue funcionando normalmente. */
+const NOMES_FILTRO = {'f-regiao':'regiao','f-estado':'estado','f-tipo':'tipo','f-rede':'rede','f-tema':'tema'};
+function rastrear(nome, dados){
+  try{ if(window.umami && typeof umami.track==='function') umami.track(nome, dados||{}); }catch(e){}
+}
+window.rastrearFiltro=function(sel){
+  const campo=NOMES_FILTRO[sel.id]||sel.id;
+  const valor=sel.value||'(todos)';
+  rastrear('filtro',{campo, valor});
+};
+
 // Vínculos institucionais exibidos no card (decisão da reunião de 01/07/2026)
 const VINC_UAES = {prefixo:'Vinculado à', nome:'Universidade Aberta à Economia Solidária', sigla:'UAES-Unifesp'};
 const VINC_NUMI = {prefixo:'Vinculado ao', nome:'NuMI-EcoSol/UFSCar', sigla:''};
@@ -429,7 +447,7 @@ function initMap() {
 
     const m = L.circleMarker([lat,lng], markerStyle(d.tipo,false)).addTo(map);
     m.bindPopup(()=>buildPopup(d), {maxWidth:340,closeButton:true,offset:[0,-2]});
-    m.on('click', ()=>selectItem(d.id));
+    m.on('click', ()=>selectItem(d.id,'mapa'));
     markers[d.id] = m;
   });
 
@@ -465,8 +483,8 @@ function buildPopup(d) {
   const chips = temas.map(t=>`<span class="popup-chip">${t}</span>`).join('');
   const redeClean = d.rede ? d.rede.replace(/\n+/g,', ').replace(/,\s*,/g,',').replace(/,\s*$/,'').trim() : '';
   const rawLinks = d.redes_sociais ? d.redes_sociais.split('\n').map(l => l.trim()).filter(l => l.length > 0) : [];
-  const linkEls = rawLinks.map(l => `<a class="popup-link" href="${l}" target="_blank">↗ ${l.includes('instagram') ? 'Instagram' : 'Site'}</a>`).join('<span style="color:#ccc;margin:0 6px">·</span>');
-  const email = d.email ? `<a class="popup-link" href="mailto:${d.email.split('\n')[0].trim()}">✉ Contato</a>` : '';
+  const linkEls = rawLinks.map(l => { const tipo = l.includes('instagram') ? 'Instagram' : 'Site'; return `<a class="popup-link" href="${l}" target="_blank" onclick="rastrear('link-externo',{tipo:'${tipo}',id:${d.id}})">↗ ${tipo}</a>`; }).join('<span style="color:#ccc;margin:0 6px">·</span>');
+  const email = d.email ? `<a class="popup-link" href="mailto:${d.email.split('\n')[0].trim()}" onclick="rastrear('link-externo',{tipo:'Contato',id:${d.id}})">✉ Contato</a>` : '';
   const footerItems = [linkEls, email].filter(Boolean).join('<span style="color:#ccc;margin:0 6px">·</span>');
   const footer = footerItems ? `<div class="popup-footer">${footerItems}</div>` : '';
 
@@ -492,7 +510,7 @@ function buildPopup(d) {
   </div>`;
 }
 
-function selectItem(id) {
+function selectItem(id, origem) {
   if (activeId&&markers[activeId]) {
     const prev = ALL_DATA.find(d=>d.id===activeId);
     if (prev) markers[activeId].setStyle(markerStyle(prev.tipo,false));
@@ -503,6 +521,7 @@ function selectItem(id) {
   markers[id].setStyle(markerStyle(d.tipo,true));
   markers[id].setPopupContent(buildPopup(d));
   markers[id].openPopup();
+  rastrear('iniciativa',{id, nome:(d.nome||'').replace(/\s+/g,' ').substring(0,80), estado:d.estado||'', origem:origem||'mapa'});
   document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('active'));
   const el = document.querySelector(`[data-id="${id}"]`);
   if (el) {el.classList.add('active');el.scrollIntoView({behavior:'smooth',block:'nearest'});}
@@ -518,7 +537,7 @@ function renderList(data) {
     const redeTag=(d.rede&&d.rede!=='nenhuma')?`<span class="tag tag-rede">${d.rede.split('\n')[0].trim().substring(0,22)}</span>`:'';
     div.innerHTML=`<div class="item-nome">${d.nome}</div><div class="item-inst">${d.instituicao}</div><div class="item-tags"><span class="tag tag-regiao">${REGIOES[d.regiao]||d.regiao||'—'}</span>${redeTag}</div>`;
     div.addEventListener('click',()=>{
-      selectItem(d.id);
+      selectItem(d.id,'lista');
       if(d.lat&&d.lng) map.flyTo([parseFloat(d.lat),parseFloat(d.lng)],10,{duration:1});
     });
     c.appendChild(div);
@@ -625,6 +644,7 @@ window.clearBusca=function(){
 };
 
 window.clearFilters=function(){
+  rastrear('limpar-filtros');
   ['f-busca','f-regiao','f-estado','f-tipo','f-rede','f-tema'].forEach(id=>document.getElementById(id).value='');
   hideSuggest();
   const clearBtn=document.getElementById('search-clear');
@@ -635,6 +655,7 @@ window.clearFilters=function(){
 
 // Botão de atualização do mapa — formulário a ser conectado posteriormente
 window.abrirFormularioAtualizacao=function(){
+  rastrear('cadastro');
   showToast('Formulário de atualização em breve');
 };
 
@@ -651,6 +672,7 @@ window.downloadAllCSV=function(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
   a.download='linha7_iniciativas_ecosol_completo.csv';a.click();
+  rastrear('download-csv',{escopo:'completo', registros:rows.length});
 };
 
 window.downloadCSV=function(){
@@ -661,6 +683,7 @@ window.downloadCSV=function(){
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
   const suffix = filteredData.length < ALL_DATA.length ? `_filtrado_${filteredData.length}` : '';
   a.download=`linha7_iniciativas_ecosol${suffix}.csv`;a.click();
+  rastrear('download-csv',{escopo:suffix?'filtrado':'completo', registros:rows.length});
 };
 
 window.addEventListener('load',()=>{
@@ -757,6 +780,7 @@ window.onSearchInput=function(){
 
 window.escolherSugestao=function(el){
   const termo=el.getAttribute('data-termo');
+  rastrear('busca',{termo, origem:'sugestao', resultados:filteredData.length});
   document.getElementById('f-busca').value=termo;
   hideSuggest();
   applyFilters();
@@ -771,7 +795,7 @@ window.onSearchKey=function(e){
   }
   if(e.key==='ArrowDown'){e.preventDefault();suggestActive=(suggestActive+1)%itens.length;marcarAtivo(itens);}
   else if(e.key==='ArrowUp'){e.preventDefault();suggestActive=(suggestActive-1+itens.length)%itens.length;marcarAtivo(itens);}
-  else if(e.key==='Enter'){if(suggestActive>=0){e.preventDefault();escolherSugestao(itens[suggestActive]);}else{hideSuggest();}}
+  else if(e.key==='Enter'){if(suggestActive>=0){e.preventDefault();escolherSugestao(itens[suggestActive]);}else{hideSuggest();const termo=document.getElementById('f-busca').value.trim();if(termo)rastrear('busca',{termo, origem:'enter', resultados:filteredData.length});}}
   else if(e.key==='Escape'){hideSuggest();}
 };
 
